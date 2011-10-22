@@ -1,0 +1,6 @@
+*.swp
+*.native
+_build
+.DS_Store
+*.pyc
+game_logs
