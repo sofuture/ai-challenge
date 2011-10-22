@@ -4,11 +4,21 @@ open Ants;;
 starter bot, this not_water function will be used instead. Note the use 
 of the get_tile function. *)
 
-let not_water state loc =
-   not ((state#get_tile loc) = `Water)
-;;
+type food_distance = {
+    distance: int;
+    food: (int * int);
+};;
 
-(* note the use of step_dir *)
+type ant_food_distance = {
+    ant: ant;
+    food_distance: food_distance;
+};;
+
+let dummy_food_dist = { distance = 1000; food = (0,0) };;
+
+let not_water state loc =
+   not ((state#get_tile loc) = `Water);;
+
 let rec try_steps state ant dirs =
     match dirs with 
     | [] -> ()
@@ -19,44 +29,60 @@ let rec try_steps state ant dirs =
             state#issue_order (ant#loc, d)
         else try_steps state ant tail;;
 
-(* step_ant makes use of the try_steps function to test all of the 
-options in order, and take the first one found; otherwise, does 
-nothing. *)
+let rec print_food flist =
+    match flist with
+    | [] -> ()
+    | (dist, (row, col)) :: tail ->
+            ddebug (Printf.sprintf "dist:%f (r:%d,c:%d)\n" dist row col);;
 
 let step_ant state ant =
-    ddebug (Printf.sprintf "i know about %d pieces of food\n" (List.length
-        state#get_food));
-    let goal = (5,5) in
-    let ((d1, d2), _) = state#distance_and_direction goal ant#loc in
-    try_steps state ant [d1; d2 ; `N; `E; `S; `W]
-;;
+    let food_dist p1 = (state#distance ant#loc p1), p1 in
+    let food = List.map food_dist state#get_food in
+    print_food food;
+    try_steps state ant [`N; `E; `S; `W];;
 
-(* This steps through a list of ants using tail recursion and attempts 
-to order all of them to move. *)
+let food_distances state ant =
+    let food_dist p1 = { distance = state#distance ant#loc p1; food = p1 } in
+    List.map food_dist state#get_food;;
 
 let rec step_ants state my_l =
-   match my_l with
+    match my_l with
     | [] -> ()
     | head :: tail ->
         step_ant state head;
         step_ants state tail;;
 
-(* The bot checks whether it's Turn 0 (setting up turn, no orders 
-allowed) and finishes the turn immediately if it is; otherwise it calls 
-step_ants. *)
+let find_ant_closest_to_food state =
+    (* loop through ants *)
+    let rec inner ants acc =
+        match ants with
+        | [] -> acc
+        | h :: t ->
+            (* for each ant find how close the closest food is *)
+            let food = food_distances state h in
+            (* get the minimum distance food for this ant *)
+            let min curr macc =
+                if curr.distance < macc.distance then
+                    curr
+                else 
+                    macc in
 
-(* The update_vision function is optional; with a lot of ants, it could 
-chew up a fair bit of processor time. If you don't call it, the visible 
-function won't work. *)
+            let best_food = List.fold_left min dummy_food_dist food in
+            if best_food.distance < acc.food_distance.distance then 
+                inner t {ant = h; food_distance = best_food}
+            else 
+                inner t acc in
+
+    let best = inner state#my_ants {ant = new ant 0 0 0; food_distance =
+        dummy_food_dist} in
+    ddebug (Printf.sprintf "found the best food which is %d" best.food_distance.distance);;
+
 
 let mybot_engine state =
-   if state#turn = 0 then state#finish_turn ()
-   else
-    (
-      state#update_vision;
-      step_ants state state#my_ants;
-      state#finish_turn ()
-    )
-;;
+    if state#turn = 0 then state#finish_turn ()
+    else
+        state#update_vision;
+        step_ants state state#my_ants;
+        state#finish_turn ();;
 
 loop mybot_engine;;
