@@ -24,10 +24,10 @@ options in order, and take the first one found; otherwise, does
 nothing. *)
 
 let step_ant state ant =
-    (*try_steps state ant [`N; `E; `S; `W]*)
+    ddebug (Printf.sprintf "i know about %d pieces of food\n" (List.length
+        state#get_food));
     let goal = (5,5) in
     let ((d1, d2), _) = state#distance_and_direction goal ant#loc in
-    ddebug (Printf.sprintf "lol");
     try_steps state ant [d1; d2 ; `N; `E; `S; `W]
 ;;
 

@@ -12,5 +12,5 @@ cd ~/dev/ai-challenge
 "$@" \
 "python tools/sample_bots/python/LeftyBot.py" \
 "python tools/sample_bots/python/HunterBot.py" \
-"./ocaml/MyBot.native" \
+"python tools/sample_bots/python/GreedyBot.py" \
 "./ocaml/MyBot.native" 

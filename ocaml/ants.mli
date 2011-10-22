@@ -65,6 +65,7 @@ class swrap :
     method update_vision : unit
     method visible : int * int -> bool
     method get_player_seed : int
+    method get_food : (int * int) list
   end
 
 val loop : (swrap -> 'a) -> unit

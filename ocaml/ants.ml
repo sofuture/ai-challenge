@@ -513,37 +513,34 @@ let time_remaining state =
 (* swrap wraps the game state. One of these is passed to the AI. *)
 
 class swrap state =
- object (self)
-   val mutable state = state
-   method bounds = state.setup.rows, state.setup.cols
-   method issue_order (o:order) = issue_order o
-   method finish_turn () = finish_turn ()
-   method direction p1 p2 = ((direction self#bounds p1 p2): (dir * dir))
-   method step_dir loc (d:dir) = step_dir d self#bounds loc
-   method get_tile loc = ((get_tile state.tmap loc): tile)
-   method distance2 p1 p2 = distance2 self#bounds p1 p2
-   method distance p1 p2 = distance self#bounds p1 p2
-   method distance_and_direction p1 p2 =
-      ((distance_and_direction self#bounds p1 p2): ((dir * dir) * float))
-   method update_vision = update_vision state.my_ants state
-   method visible loc = visible state loc
-   method passable loc = passable state loc
-   method centre = centre state
-   method time_remaining = time_remaining state
-   method set_state s = state <- s
-   method get_state = state
-   method turn = state.turn
-   method my_ants = state.my_ants
-   method enemy_ants = state.enemy_ants
-   method my_hills = state.my_hills
-   method enemy_hills = state.enemy_hills
-   method get_map = state.tmap
-   method get_player_seed = state.setup.player_seed
-(*
-   More getters to be added as needed
-*)
- end
-;;
+    object (self)
+    val mutable state = state
+        method bounds = state.setup.rows, state.setup.cols
+        method issue_order (o:order) = issue_order o
+        method finish_turn () = finish_turn ()
+        method direction p1 p2 = ((direction self#bounds p1 p2): (dir * dir))
+        method step_dir loc (d:dir) = step_dir d self#bounds loc
+        method get_tile loc = ((get_tile state.tmap loc): tile)
+        method distance2 p1 p2 = distance2 self#bounds p1 p2
+        method distance p1 p2 = distance self#bounds p1 p2
+        method distance_and_direction p1 p2 = 
+            ((distance_and_direction self#bounds p1 p2): ((dir * dir) * float))
+        method update_vision = update_vision state.my_ants state
+        method visible loc = visible state loc
+        method passable loc = passable state loc
+        method centre = centre state
+        method time_remaining = time_remaining state
+        method set_state s = state <- s
+        method get_state = state
+        method turn = state.turn
+        method my_ants = state.my_ants
+        method enemy_ants = state.enemy_ants
+        method my_hills = state.my_hills
+        method enemy_hills = state.enemy_hills
+        method get_map = state.tmap
+        method get_player_seed = state.setup.player_seed
+        method get_food = state.food
+    end;;
 
 (* Main game loop. Bots should define a main function taking a swrap for 
 an argument (see above), and then call loop main_function. See how the 
