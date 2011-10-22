@@ -1,9 +1,7 @@
 #!/usr/bin/env sh
 
-cd ~/dev/ai-challenge/ocaml
-ocamlbuild -libs unix MyBot.native
+sh build.sh
 
-cd ~/dev/ai-challenge
 ./tools/playgame.py --player_seed 42 \
 --end_wait=0.25 --verbose \
 --log_dir tools/game_logs \
