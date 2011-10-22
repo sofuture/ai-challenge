@@ -10,19 +10,25 @@ let not_water state loc =
 
 (* note the use of step_dir *)
 let rec try_steps state ant dirs =
-   match dirs with [] -> ()
-   | d :: tail ->
+    match dirs with 
+    | [] -> ()
+    | `Stop :: tail ->
+        try_steps state ant tail
+    | d :: tail ->
         if not_water state (state#step_dir ant#loc d) then
-           state#issue_order (ant#loc, d)
-        else try_steps state ant tail
-;;
+            state#issue_order (ant#loc, d)
+        else try_steps state ant tail;;
 
 (* step_ant makes use of the try_steps function to test all of the 
 options in order, and take the first one found; otherwise, does 
 nothing. *)
 
 let step_ant state ant =
-   try_steps state ant [`N; `E; `S; `W]
+    (*try_steps state ant [`N; `E; `S; `W]*)
+    let goal = (5,5) in
+    let ((d1, d2), _) = state#distance_and_direction goal ant#loc in
+    ddebug (Printf.sprintf "lol");
+    try_steps state ant [d1; d2 ; `N; `E; `S; `W]
 ;;
 
 (* This steps through a list of ants using tail recursion and attempts 

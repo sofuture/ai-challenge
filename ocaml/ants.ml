@@ -4,7 +4,7 @@ any improvements, please post to the forum or upload a fix! *)
 
 open Unix;;
 
-let out_chan = Pervasives.stderr (* open_out "mybot_err.log" *);;
+let out_chan = (*Pervasives.stderr*) open_out "mybot_err.log";;
 
 (* this previously used Sys.time, but it's wrong in this context
  *)
