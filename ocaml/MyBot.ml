@@ -84,6 +84,8 @@ let rec try_steps state ant dirs =
     | `Stop :: tail -> try_steps state ant tail
     | d :: tail ->
         if valid_move state (state#step_dir ant#loc d) then
+            let r, y = ant#loc in
+            ddebug (Printf.sprintf "wtf: %d %d %d" r y ant#owner);
             state#issue_order (ant#loc, d)
         else 
             try_steps state ant tail;;
