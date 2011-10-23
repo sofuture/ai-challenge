@@ -26,6 +26,7 @@ let rec try_steps state ant dirs =
         try_steps state ant tail
     | d :: tail ->
         if not_water state (state#step_dir ant#loc d) then
+            (* if we eat the food we want to remove it from our vision here *)
             state#issue_order (ant#loc, d)
         else try_steps state ant tail;;
 
@@ -48,13 +49,12 @@ let find_best_food_for_ant state ant =
         else 
             macc in
     let best_food = List.fold_left min dummy_food_dist food in
-    best_food.food;;
+    best_food;;
 
 let step_ant state ant =
     let bf = find_best_food_for_ant state ant in
-    let ((dd1, dd2), _) = state#distance_and_direction ant#loc bf in
+    let ((dd1, dd2), _) = state#distance_and_direction ant#loc bf.food in
     try_steps state ant [dd1; dd2; `N; `E; `S; `W];;
-(*    try_steps state ant [`N; `E; `S; `W];;*)
 
 let rec step_ants state my_l =
     match my_l with
@@ -69,16 +69,7 @@ let find_ant_closest_to_food state =
         match ants with
         | [] -> acc
         | h :: t ->
-            (* for each ant find how close the closest food is *)
-            let food = food_distances state h in
-            (* get the minimum distance food for this ant *)
-            let min curr macc =
-                if curr.distance < macc.distance then
-                    curr
-                else 
-                    macc in
-
-            let best_food = List.fold_left min dummy_food_dist food in
+            let best_food = find_best_food_for_ant state h in
             if best_food.distance < acc.food_distance.distance then 
                 inner t {ant = h; food_distance = best_food}
             else 
