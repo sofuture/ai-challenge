@@ -145,9 +145,10 @@ let rec step_ants state my_l =
 
 let mybot_engine state =
     if state#turn = 0 then state#finish_turn ()
-    else
+    else (
         state#update_vision;
         step_ants state state#my_ants;
-        state#finish_turn ();;
+        state#finish_turn ()
+    );;
 
 loop mybot_engine;;
