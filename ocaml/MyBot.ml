@@ -5,7 +5,7 @@ starter bot, this not_water function will be used instead. Note the use
 of the get_tile function. *)
 
 type food_distance = {
-    distance: int;
+    distance: float;
     food: (int * int);
 };;
 
@@ -14,7 +14,7 @@ type ant_food_distance = {
     food_distance: food_distance;
 };;
 
-let dummy_food_dist = { distance = 1000; food = (0,0) };;
+let dummy_food_dist = { distance = 1000.0; food = (0,0) };;
 
 let not_water state loc =
    not ((state#get_tile loc) = `Water);;
@@ -35,15 +35,26 @@ let rec print_food flist =
     | (dist, (row, col)) :: tail ->
             ddebug (Printf.sprintf "dist:%f (r:%d,c:%d)\n" dist row col);;
 
-let step_ant state ant =
-    let food_dist p1 = (state#distance ant#loc p1), p1 in
-    let food = List.map food_dist state#get_food in
-    print_food food;
-    try_steps state ant [`N; `E; `S; `W];;
-
 let food_distances state ant =
     let food_dist p1 = { distance = state#distance ant#loc p1; food = p1 } in
     List.map food_dist state#get_food;;
+
+let find_best_food_for_ant state ant =
+    let food = food_distances state ant in
+    (* get the minimum distance food for this ant *)
+    let min curr macc =
+        if curr.distance < macc.distance then
+            curr
+        else 
+            macc in
+    let best_food = List.fold_left min dummy_food_dist food in
+    best_food.food;;
+
+let step_ant state ant =
+    let bf = find_best_food_for_ant state ant in
+    let ((dd1, dd2), _) = state#distance_and_direction ant#loc bf in
+    try_steps state ant [dd1; dd2; `N; `E; `S; `W];;
+(*    try_steps state ant [`N; `E; `S; `W];;*)
 
 let rec step_ants state my_l =
     match my_l with
@@ -75,7 +86,7 @@ let find_ant_closest_to_food state =
 
     let best = inner state#my_ants {ant = new ant 0 0 0; food_distance =
         dummy_food_dist} in
-    ddebug (Printf.sprintf "found the best food which is %d" best.food_distance.distance);;
+    ddebug (Printf.sprintf "found the best food which is %f" best.food_distance.distance);;
 
 
 let mybot_engine state =
