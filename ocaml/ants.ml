@@ -162,7 +162,7 @@ let add_food gstate row col =
    {gstate with food = ((row, col) :: gstate.food)}
 ;;
 
-(*
+
 let remove_food gstate row col =
    if gstate.tmap.(row).(col).content = (int_of_tile `Food) then
       gstate.tmap.(row).(col) <- 
@@ -170,7 +170,7 @@ let remove_food gstate row col =
    {gstate with food = (List.filter (fun p -> not (p = (row, col)))
                         gstate.food)}
 ;;
-*)
+
 
 let add_water gstate row col =
    gstate.tmap.(row).(col) <- 
@@ -262,9 +262,8 @@ let add_line gstate line =
          match fw with
           | "f" -> add_food gstate row col
           | "w" -> add_water gstate row col
-(*
           | "r" -> remove_food gstate row col
-*)
+
           | _ -> gstate)
       (sscanf_cps "%s %d"
         (fun key v ->
