@@ -96,6 +96,7 @@ let food_distances state ant =
     List.map food_dist state#get_food;;
 
 (* find food closest to given ant *)
+(* Best food is closest food?  Greedy algorithm FTL *)
 let find_best_food_for_ant state ant =
     let food = food_distances state ant in
     let best_food = List.fold_left min_fd dummy_food_dist food in
