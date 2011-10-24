@@ -5,3 +5,4 @@ _build
 *.pyc
 game_logs
 Bot*.zip
+mybot_err.log
