@@ -144,14 +144,18 @@ let rec step_ants state my_l acc =
         let order = step_ant state head in
         step_ants state tail (order :: acc);;
 
-(* actually issue those order (allow us some holistic oversight) *)
-let rec submit_orders state orders =
+let rec submit_orders state orders acc =
     match orders with
     | [] -> ()
     | order :: t ->
-        if order.dir <> `Stop then
-            state#issue_order (order.subj#loc, order.dir);
-        submit_orders state t;;
+        let coord = state#step_dir order.subj#loc order.dir in
+        if List.mem coord acc then
+            submit_orders state t acc
+        else (
+            if order.dir <> `Stop then
+                state#issue_order (order.subj#loc, order.dir);
+            submit_orders state t (coord :: acc)
+        );;
 
 (* ----------- *)
 (* goooooooo!! *)
@@ -162,7 +166,7 @@ let mybot_engine state =
     else (
         state#update_vision;
         let orders = step_ants state state#my_ants [] in
-        submit_orders state orders;
+        submit_orders state orders [];
         state#finish_turn ()
     );;
 
