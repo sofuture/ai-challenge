@@ -45,6 +45,11 @@ type ant_food_distance = {
     food_distance: food_distance;
 };;
 
+type order = {
+    subj: ant;
+    dir: dir;
+};;
+
 (* helpers for initializing types *)
 
 let dummy_food_dist = { distance = 1000.0; food = (0,0) };;
@@ -77,16 +82,15 @@ let not_water state loc =
 let valid_move state loc =
     not_water state loc;;
 
-(* try to move in the following dirs if possible (in order) *)
+(* try to move in the following dirs if possible (in order) 
+ * return the move that works *)
 let rec try_steps state ant dirs =
     match dirs with 
-    | [] -> ()
+    | [] -> {subj = ant; dir = `Stop}
     | `Stop :: tail -> try_steps state ant tail
     | d :: tail ->
         if valid_move state (state#step_dir ant#loc d) then
-            let r, y = ant#loc in
-            ddebug (Printf.sprintf "wtf: %d %d %d" r y ant#owner);
-            state#issue_order (ant#loc, d)
+            {subj = ant; dir = d}
         else 
             try_steps state ant tail;;
 
@@ -132,12 +136,22 @@ let step_ant state ant =
 (* group logic *)
 (* ----------- *)
 
-let rec step_ants state my_l =
+(* get orders for all ants *)
+let rec step_ants state my_l acc =
     match my_l with
-    | [] -> ()
+    | [] -> acc
     | head :: tail ->
-        step_ant state head;
-        step_ants state tail;;
+        let order = step_ant state head in
+        step_ants state tail (order :: acc);;
+
+(* actually issue those order (allow us some holistic oversight) *)
+let rec submit_orders state orders =
+    match orders with
+    | [] -> ()
+    | order :: t ->
+        if order.dir <> `Stop then
+            state#issue_order (order.subj#loc, order.dir);
+        submit_orders state t;;
 
 (* ----------- *)
 (* goooooooo!! *)
@@ -147,7 +161,8 @@ let mybot_engine state =
     if state#turn = 0 then state#finish_turn ()
     else (
         state#update_vision;
-        step_ants state state#my_ants;
+        let orders = step_ants state state#my_ants [] in
+        submit_orders state orders;
         state#finish_turn ()
     );;
 
