@@ -123,12 +123,14 @@ let food_distances state ant =
     List.map food_dist state#get_food;;
 
 (* find food closest to given ant *)
+(** Is the declaration of best_food really necessary? **)
 let find_best_food_for_ant state ant =
     let food = food_distances state ant in
     let best_food = List.fold_left min_fd dummy_food_dist food in
     best_food;;
 
 (* find which ant is closest to any food *)
+(** Why do we call it "food_distance" when it's actually a food? **)
 let find_ant_closest_to_food state =
     let rec inner ants acc =
         match ants with
@@ -139,6 +141,7 @@ let find_ant_closest_to_food state =
                 inner t {ant = h; food_distance = best_food}
             else 
                 inner t acc in
+    (* Welcome to identation/nesting hell *)
     let best = inner state#my_ants {ant = new ant 0 0 0; food_distance =
         dummy_food_dist} in
     ddebug (Printf.sprintf "found the best food which is %f" best.food_distance.distance);;
@@ -179,6 +182,8 @@ let rec submit_orders state orders acc =
                 state#issue_order (order.subj#loc, order.dir);
             submit_orders state t (coord :: acc)
         );;
+
+loop mybot_engine;;
 
 (* ----------- *)
 (* goooooooo!! *)
