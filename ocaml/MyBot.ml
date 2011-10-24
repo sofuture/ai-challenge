@@ -1,22 +1,22 @@
 open Ants;;
 
 (* 
-             '-=.
-           ,-"=. \
-                \ \
-             _,-=\/=._        _.-,_
-            /         \      /=-._ "-.
-           |   /~\   /~\    /     `-._\
-           |   \o/   \o/   / K I L L  /        
-            \_    ~~~ /    |  A L L  |
-              `~,._,-'    /  A N T S /
-                 | |      =-._      /
-             _,-=/ \=-._     /|`-._/
+             '-=.          K I L L
+           ,-"=. \          A L L
+                \ \        A N T S
+             _,-=\/=._        .
+            /         \      /\
+           |   /~\   /~\     /\ 
+           |   \o/   \o/     /\        
+            \_    ~~~ /      ||
+              `~,._,-'       / \
+                 | |        =-.=
+             _,-=/ \=-._     /|
            //           \\   )\
           /|             |)_.'/
          //|  M Y B O T  |\_."   _.-\
         (|  \           /    _.`=    \
-        ||   ":_    _.;"_.-;"   _.-=.:
+        ||   ":_    _.;"_.-""   _.-=.:
      _-."/    / `-."\_."        =-_.;\
     `-_./   /             _.-=.    / \\
            |              =-_.;\ ."   \\
@@ -35,6 +35,12 @@ open Ants;;
 (* explicit types *)
 (* -------------- *)
 
+(*type thing_distance = {
+    thing: tile;
+    distance: float;
+    loc: (int * int);
+}*)
+
 type food_distance = {
     distance: float;
     food: (int * int);
@@ -51,6 +57,8 @@ type order = {
 };;
 
 (* helpers for initializing types *)
+
+(*let dummy_t_dist = { thing = `Unseen; distance = 1000.0; loc = (0,0) };; '*)
 
 let dummy_food_dist = { distance = 1000.0; food = (0,0) };;
 
@@ -93,6 +101,21 @@ let rec try_steps state ant dirs =
             {subj = ant; dir = d}
         else 
             try_steps state ant tail;;
+
+(* find how far a given type of thing is from a given ant *)
+(*let thing_distances state ttype ant =
+   
+    let map = state#get_map in
+    for count_row = 0 to (Array.length map - 1) do
+        let test_row = map.(count_row) in
+        for count_col = 0 to (Array.length test_row - 1) do
+            match Ants.tile_of_int test_row.(count_col) with
+            | ttype -> 
+            mat
+         test_row.(count_col) <- clear_tile test_row.(count_col)
+      done
+   done;
+*)
 
 (* find how far all known food is from given ant *)
 let food_distances state ant =
