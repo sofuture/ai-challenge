@@ -107,21 +107,42 @@ let get_tile_list state =
     Array.fold_left for_rows [] state#get_map;;
 
 let get_tile_list_of_type state ttype =
+    (*
+     * too inefficient to use
+     *
     let mf cell = 
         if tile_of_int cell.content = ttype then true
         else false in
     List.filter mf (get_tile_list state);;
+    *)
+    match ttype with 
+    | `Water -> []
+    | `Land -> []
+    | `Food -> 
+            (* (int * int) list *)
+            state#get_food
+    | `Ant -> 
+            (* Ants.ant list -> (int * int) list*)
+            List.map (fun x -> x#loc) state#enemy_ants
+    | `Dead -> []
+    | `Hill -> 
+            (* ((int * int) * int) *)
+            List.map (fun ((r,c),o) -> (r,c)) state#enemy_hills
+    | `Unseen -> [];;
+
 
 (* find how far all known <thing> is from given ant *)
 let thing_distances state ant ttype =
-    let tdist p1 = 
-        ddebug (Printf.sprintf "thing at (%d, %d)\n" p1.row p1.col);
-        { 
-            ant = Some ant;
-            distance = state#distance ant#loc (p1.row, p1.col);
-            thing = Some ttype;
-            loc = p1.row, p1.col;
-        } in
+    let tdist c = 
+        match c with 
+        | ((row:int), (col:int)) ->
+            ddebug (Printf.sprintf "thing at (%d, %d)\n" row col);
+            { 
+                ant = Some ant;
+                distance = state#distance ant#loc (row, col);
+                thing = Some ttype;
+                loc = row, col;
+            } in
     List.map tdist (get_tile_list_of_type state ttype);;
 
 (* find how far all known food is from given ant *)
@@ -161,17 +182,23 @@ let rec submit_orders state orders acc =
     | [] -> ()
     | order :: t ->
         let coord = state#step_dir order.subj#loc order.dir in
+        let atr, atc = order.subj#loc in
         let r, c = coord in
-        ddebug (Printf.sprintf "want to move to (%d, %d)\n" r c);
+        ddebug (Printf.sprintf "at (%d,%d) want to move to (%d, %d)\n" atr atc r c);
         if List.mem coord acc then (
-            ddebug (Printf.sprintf "cant move to (%d, %d)\n" r c);            
+            ddebug (Printf.sprintf "at (%d,%d) cant move to (%d, %d)\n" atr atc r c);
             submit_orders state t (order.subj#loc :: acc)
         )
         else (
-            ddebug (Printf.sprintf "okay to move to (%d, %d)\n" r c);
-            if order.dir <> `Stop then
+            ddebug (Printf.sprintf "at (%d,%d) okay to move to (%d, %d)\n" atr atc r c);
+            if order.dir <> `Stop then (
                 state#issue_order (order.subj#loc, order.dir);
-            submit_orders state t (coord :: acc)
+                (* if we just moved, remove our current location from 
+                 * forbidden spots *)
+                let less_at = List.filter (fun (rx,ry) -> rx <> atr && rx <> atc) acc in
+                submit_orders state t (coord :: less_at)
+            ) else 
+                submit_orders state t (coord :: acc)
         );;
 
 (* ----------- *)
@@ -184,7 +211,8 @@ let mybot_engine state =
         state#update_vision;
         let orders = step_ants state state#my_ants [] in
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
-        submit_orders state orders [];
+        let curr = List.map (fun x -> x.subj#loc) orders in
+        submit_orders state orders curr;
         state#finish_turn ()
     );;
 
