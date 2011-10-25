@@ -35,20 +35,17 @@ open Ants;;
 (* explicit types *)
 (* -------------- *)
 
-(*type thing_distance = {
-    thing: tile;
-    distance: float;
-    loc: (int * int);
-}*)
+type 'a option =
+    | None
+    | Some of 'a
 
-type food_distance = {
-    distance: float;
-    food: (int * int);
-};;
+type mtile = (int * int) 
 
-type ant_food_distance = {
-    ant: ant;
-    food_distance: food_distance;
+type survey = {
+    ant: ant option;
+    distance: float;
+    thing: tile option;
+    loc: int * int;
 };;
 
 type order = {
@@ -58,9 +55,12 @@ type order = {
 
 (* helpers for initializing types *)
 
-(*let dummy_t_dist = { thing = `Unseen; distance = 1000.0; loc = (0,0) };; '*)
-
-let dummy_food_dist = { distance = 1000.0; food = (0,0) };;
+let dummy_survey = {
+    ant = None;
+    distance = 1000.0;
+    thing = None;
+    loc = 0, 0;
+};;
 
 (* ------------- *)
 (* general utils *)
@@ -102,45 +102,35 @@ let rec try_steps state ant dirs =
         else 
             try_steps state ant tail;;
 
-(* find how far a given type of thing is from a given ant *)
-(*let thing_distances state ttype ant =
-   
-    let map = state#get_map in
-    for count_row = 0 to (Array.length map - 1) do
-        let test_row = map.(count_row) in
-        for count_col = 0 to (Array.length test_row - 1) do
-            match Ants.tile_of_int test_row.(count_col) with
-            | ttype -> 
-            mat
-         test_row.(count_col) <- clear_tile test_row.(count_col)
-      done
-   done;
-*)
+let get_tile_list state = 
+    let for_rows acc row = acc @ Array.to_list row in
+    Array.fold_left for_rows [] state#get_map;;
+
+let get_tile_list_of_type state ttype =
+    let mf cell = 
+        if tile_of_int cell.content = ttype then true
+        else false in
+    List.filter mf (get_tile_list state);;
+
+(* find how far all known <thing> is from given ant *)
+let thing_distances state ant ttype =
+    let tdist p1 = 
+        ddebug (Printf.sprintf "thing at (%d, %d)\n" p1.row p1.col);
+        { 
+            ant = Some ant;
+            distance = state#distance ant#loc (p1.row, p1.col);
+            thing = Some ttype;
+            loc = p1.row, p1.col;
+        } in
+    List.map tdist (get_tile_list_of_type state ttype);;
 
 (* find how far all known food is from given ant *)
-let food_distances state ant =
-    let food_dist p1 = { distance = state#distance ant#loc p1; food = p1 } in
-    List.map food_dist state#get_food;;
+let food_distances state ant = thing_distances state ant `Food;;
 
 (* find food closest to given ant *)
 let find_best_food_for_ant state ant =
     let food = food_distances state ant in
-    List.fold_left min_fd dummy_food_dist food;;
-
-(* find which ant is closest to any food *)
-let find_ant_closest_to_food state =
-    let rec inner ants acc =
-        match ants with
-        | [] -> acc
-        | h :: t -> 
-            let best_food = find_best_food_for_ant state h in
-            if best_food.distance < acc.food_distance.distance then 
-                inner t {ant = h; food_distance = best_food}
-            else 
-                inner t acc in
-    let best = inner state#my_ants 
-        {ant = new ant 0 0 0; food_distance = dummy_food_dist} in
-    ddebug (Printf.sprintf "found the best food which is %f" best.food_distance.distance);;
+    List.fold_left min_fd dummy_survey food;;
 
 (* --------- *)
 (* ant logic *)
@@ -148,7 +138,7 @@ let find_ant_closest_to_food state =
 
 let step_ant state ant =
     let bf = find_best_food_for_ant state ant in
-    let ((dd1, dd2), _) = state#distance_and_direction ant#loc bf.food in
+    let ((dd1, dd2), _) = state#distance_and_direction ant#loc bf.loc in
     let sh_dir = shuffle [dd1; dd2] in
     let sh_rem = shuffle [`N; `E; `S; `W] in
     let dirs = sh_dir @ sh_rem in
@@ -171,9 +161,14 @@ let rec submit_orders state orders acc =
     | [] -> ()
     | order :: t ->
         let coord = state#step_dir order.subj#loc order.dir in
-        if List.mem coord acc then
-            submit_orders state t acc
+        let r, c = coord in
+        ddebug (Printf.sprintf "want to move to (%d, %d)\n" r c);
+        if List.mem coord acc then (
+            ddebug (Printf.sprintf "cant move to (%d, %d)\n" r c);            
+            submit_orders state t (order.subj#loc :: acc)
+        )
         else (
+            ddebug (Printf.sprintf "okay to move to (%d, %d)\n" r c);
             if order.dir <> `Stop then
                 state#issue_order (order.subj#loc, order.dir);
             submit_orders state t (coord :: acc)
@@ -188,6 +183,7 @@ let mybot_engine state =
     else (
         state#update_vision;
         let orders = step_ants state state#my_ants [] in
+        ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
         submit_orders state orders [];
         state#finish_turn ()
     );;

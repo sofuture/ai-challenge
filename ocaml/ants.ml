@@ -4,54 +4,45 @@ any improvements, please post to the forum or upload a fix! *)
 
 open Unix;;
 
-let out_chan = (*Pervasives.stderr*) open_out "mybot_err.log";;
+let out_chan = open_out "mybot_err.log";;
 
-(* this previously used Sys.time, but it's wrong in this context
- *)
 let get_time () = Unix.gettimeofday ();;
 
 let ddebug s = 
-   output_string out_chan s; 
-   flush out_chan
-;;
+    output_string out_chan s; 
+    flush out_chan;;
 
-type game_setup =
- {
-   loadtime : int;
-   turntime : int;
-   rows : int;
-   cols : int;
-   turns : int;
-   viewradius2 : int;
-   attackradius2 : int;
-   spawnradius2 : int;
-   player_seed : int;
- }
-;;
+type game_setup = {
+    loadtime : int;
+    turntime : int;
+    rows : int;
+    cols : int;
+    turns : int;
+    viewradius2 : int;
+    attackradius2 : int;
+    spawnradius2 : int;
+    player_seed : int;
+};;
 
-type mapb = 
- {
-   content : int;
-   seen : int
- }
-;;
+type mapb = {
+    content : int;
+    seen : int;
+    row : int;
+    col : int;
+};;
 
 (* You can change this to a record if you want to remove OO stuff *)
 
-class ant ~row ~col ~owner =
-   object
-      method loc = row, col
-      method row = row
-      method col = col
-      method owner = owner
-      method to_string =
-         Printf.sprintf "Ant at %d, %d belongs to player %d" 
-            row col owner;
-   end
-;;
+class ant ~row ~col ~owner = object
+    method loc = row, col
+    method row = row
+    method col = col
+    method owner = owner
+    method to_string =
+        Printf.sprintf "Ant at %d, %d belongs to player %d" row col owner;
+end;;
 
-type tgame_state =
-  { 
+type tgame_state = { 
     setup : game_setup;
     turn : int;
     my_ants : ant list;
@@ -62,115 +53,100 @@ type tgame_state =
     food : (int * int) list;
     tmap: mapb array array; 
     go_time: float;
- }
-;;
+};;
 
 type dir = [ `N | `E | `S | `W | `Stop];;
 
-type tile = [ `Water | `Land | `Food | `Ant | `Dead | `Unseen];;
+type tile = [ `Water | `Land | `Food | `Ant | `Dead | `Hill | `Unseen];;
 
 type order = ((int * int) * dir);;
 
-let proto_tile =
- {
-   content = 0;
-   seen = 0;
- }
-;;
+let proto_tile = {
+    content = 0;
+    seen = 0;
+    row = 0;
+    col = 0;
+};;
 
 let tile_of_int c =
-   if c = 0 then `Unseen
-   else if c = 1 then `Land
-   else if c = 2 then `Water
-   else if c = 3 then `Food
-   else if (c > 99) && (c < 200) then `Ant
-   else `Dead
-;;
+    if c = 0 then `Unseen
+    else if c = 1 then `Land
+    else if c = 2 then `Water
+    else if c = 3 then `Food
+    else if (c > 99) && (c < 200) then `Ant
+    else if (c > 299) && (c < 400) then `Hill
+    else `Dead;;
 
 let string_of_dir d = 
-   match d with
+    match d with
     | `N -> "N" 
     | `E -> "E"
     | `S -> "S"
     | `W -> "W"
-    | `Stop -> "Stop"
-;;
+    | `Stop -> "Stop";;
 
 let int_of_tile t =
-   match t with
+    match t with
     | `Unseen -> 0
     | `Land -> 1
     | `Water -> 2
     | `Food -> 3
     | `Ant -> 199
     | `Dead -> 299
-;;
+    | `Hill -> 399;;
 
 (* Begin input processing stuff *)
 
 let set_turn gstate v =
-   {gstate with turn = v}
-;;
+    { gstate with turn = v };;
 
 let set_loadtime gstate v =
-   {gstate with setup = {gstate.setup with loadtime = v}}
-;;
+    { gstate with setup = {gstate.setup with loadtime = v} };;
 
 let set_turntime gstate v = 
-   {gstate with setup = {gstate.setup with turntime = v}}
-;;
+    { gstate with setup = {gstate.setup with turntime = v} };;
 
 let set_rows gstate v = 
-   {gstate with setup = {gstate.setup with rows = v}}
-;;
+    { gstate with setup = {gstate.setup with rows = v} };;
 
 let set_cols gstate v = 
-   {gstate with setup = {gstate.setup with cols = v}}
-;;
+    { gstate with setup = {gstate.setup with cols = v} };;
 
 let set_turns gstate v = 
-   {gstate with setup = {gstate.setup with turns = v}}
-;;
+    { gstate with setup = {gstate.setup with turns = v} };;
 
 let set_viewradius2 gstate v = 
-   {gstate with setup = {gstate.setup with viewradius2 = v}}
-;;
+    { gstate with setup = {gstate.setup with viewradius2 = v} };;
 
 let set_attackradius2 gstate v = 
-   {gstate with setup = {gstate.setup with attackradius2 = v}}
-;;
+    { gstate with setup = {gstate.setup with attackradius2 = v} };;
 
 let set_spawnradius2 gstate v = 
-   {gstate with setup = {gstate.setup with spawnradius2 = v}}
-;;
+    { gstate with setup = {gstate.setup with spawnradius2 = v} };;
 
 let set_player_seed gstate v = 
-   {gstate with setup = {gstate.setup with player_seed = v}}
-;;
+    { gstate with setup = {gstate.setup with player_seed = v} };;
 
 let uncomment s =
-  try String.sub s 0 (String.index s '#')
-  with Not_found -> s
+    try 
+        String.sub s 0 (String.index s '#')
+    with Not_found -> s;;
 
 let sscanf_cps fmt cont_ok cont_fail s =
-  try Scanf.sscanf s fmt cont_ok
-  with _ -> cont_fail s
+    try 
+        Scanf.sscanf s fmt cont_ok
+    with _ -> 
+        cont_fail s;;
 
 let add_food gstate row col =
-   gstate.tmap.(row).(col) <- 
-      {gstate.tmap.(row).(col) with content = (int_of_tile `Food)};
-   {gstate with food = ((row, col) :: gstate.food)}
-;;
-
+    gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (int_of_tile `Food)};
+    {gstate with food = ((row, col) :: gstate.food)};;
 
 let remove_food gstate row col =
-   if gstate.tmap.(row).(col).content = (int_of_tile `Food) then
-      gstate.tmap.(row).(col) <- 
-         {gstate.tmap.(row).(col) with content = (int_of_tile `Land)};
-   {gstate with food = (List.filter (fun p -> not (p = (row, col)))
-                        gstate.food)}
-;;
-
+    if gstate.tmap.(row).(col).content = (int_of_tile `Food) then
+        gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with 
+            content = (int_of_tile `Land)};
+    {gstate with food = (List.filter (fun p -> not (p = (row, col))) gstate.food)};;
 
 let add_water gstate row col =
    gstate.tmap.(row).(col) <- 
@@ -180,10 +156,10 @@ let add_water gstate row col =
 
 (* Note that this clears previously seen food. *)
 
-let clear_tile t =
+let clear_tile t row col =
    match (tile_of_int t.content) with
     | `Water | `Unseen -> t
-    | _ -> {t with content = (int_of_tile `Land)}
+    | _ -> {t with content = (int_of_tile `Land); row = row; col = col}
 ;;
 
 let clear_gstate gs =
@@ -192,7 +168,7 @@ let clear_gstate gs =
    for count_row = 0 to (Array.length gs.tmap - 1) do
       let test_row = gs.tmap.(count_row) in
       for count_col = 0 to (Array.length test_row - 1) do
-         test_row.(count_col) <- clear_tile test_row.(count_col)
+         test_row.(count_col) <- clear_tile test_row.(count_col) count_row count_col
       done
    done;
    {gs with my_ants = []; enemy_ants = []; dead_ants = []; food = [];
@@ -201,17 +177,17 @@ let clear_gstate gs =
 ;;
 
 let add_hill gstate row col owner =
-   try
-     (
-      match owner with
-       | 0 ->
-            {gstate with my_hills = (((row, col), owner) :: gstate.my_hills)}
-       | n ->
-            {gstate with enemy_hills = 
-               (((row, col), owner) :: gstate.enemy_hills)}
-     )
-   with _ -> gstate
-;;
+    try (
+        gstate.tmap.(row).(col) <-
+            { gstate.tmap.(row).(col) with content = (300 + owner) };
+        match owner with
+        | 0 ->
+            { gstate with my_hills = (((row, col), owner) :: gstate.my_hills) }
+        | n ->
+            { gstate with enemy_hills = (((row, col), owner) :: gstate.enemy_hills) }
+    )
+    with _ ->
+        gstate;;
 
 let add_ant gstate row col owner =
    try
@@ -240,9 +216,14 @@ let add_dead_ant gstate row col owner =
 ;;
 
 let initialize_map gstate =
-   let new_map = 
-      Array.make_matrix gstate.setup.rows gstate.setup.cols proto_tile
-   in
+   let new_map = Array.make_matrix gstate.setup.rows gstate.setup.cols proto_tile in
+   for count_row = 0 to (Array.length new_map - 1) do
+      let test_row = new_map.(count_row) in
+      for count_col = 0 to (Array.length test_row - 1) do
+         test_row.(count_col) <- clear_tile test_row.(count_col) count_row count_col
+      done
+   done;
+
    {gstate with tmap = new_map}
 ;;
 
@@ -577,6 +558,14 @@ let loop engine =
       go_time = 0.0;
      }
   in
+    for count_row = 0 to (Array.length proto_gstate.tmap - 1) do
+      let test_row = proto_gstate.tmap.(count_row) in
+      for count_col = 0 to (Array.length test_row - 1) do
+         test_row.(count_col) <- clear_tile test_row.(count_col) count_row count_col
+      done
+   done;
+
+  
   let wrap = new swrap proto_gstate in
   let rec take_turn i gstate =
     match read gstate with
