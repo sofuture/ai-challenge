@@ -179,8 +179,6 @@ let rec submit_orders state orders acc =
             submit_orders state t (coord :: acc)
         );;
 
-loop mybot_engine;;
-
 (* ----------- *)
 (* goooooooo!! *)
 (* ----------- *)
