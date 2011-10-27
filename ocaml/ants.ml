@@ -4,6 +4,8 @@ any improvements, please post to the forum or upload a fix! *)
 
 open Unix;;
 
+open Hashtbl;;
+
 let out_chan = open_out "mybot_err.log";;
 
 let get_time () = Unix.gettimeofday ();;
@@ -53,6 +55,7 @@ type tgame_state = {
     food : (int * int) list;
     tmap: mapb array array; 
     go_time: float;
+    now_occupied : ((int * int), int) Hashtbl.t;
 };;
 
 type dir = [ `N | `E | `S | `W | `Stop];;
@@ -96,6 +99,7 @@ let int_of_tile t =
     | `Hill -> 399;;
 
 (* Begin input processing stuff *)
+
 
 let set_turn gstate v =
     { gstate with turn = v };;
@@ -203,6 +207,30 @@ let add_ant gstate row col owner =
      )
    with _ -> gstate
 ;;
+
+let reset_occupied gstate =
+    Hashtbl.clear gstate.now_occupied;
+    let insert_loc mant = Hashtbl.add gstate.now_occupied mant#loc 0; () in
+    let _ = List.map insert_loc gstate.my_ants in
+    (*let deb (kr,kc) v =
+        ddebug (Printf.sprintf "== ant at %d,%d" kr kc); () in
+    Hashtbl.iter deb gstate.now_occupied; *)
+    ();;
+
+let remove_occupied_location gstate loc = 
+    try (
+        Hashtbl.remove gstate.now_occupied loc
+    ) with _ -> ();;
+
+let add_occupied_location gstate loc = 
+    try (
+        Hashtbl.add gstate.now_occupied loc 0
+    ) with _ -> ();;
+
+let is_occupied_location gstate loc =
+    try (
+        Hashtbl.mem gstate.now_occupied loc
+    ) with _ -> false;;
 
 let add_dead_ant gstate row col owner =
    try
@@ -520,6 +548,10 @@ class swrap state =
         method get_map = state.tmap
         method get_player_seed = state.setup.player_seed
         method get_food = state.food
+        method is_occupied loc = is_occupied_location state loc
+        method remove_occupied loc = remove_occupied_location state loc
+        method add_occupied loc = add_occupied_location state loc
+        method reset_occupied = reset_occupied state
     end;;
 
 (* Main game loop. Bots should define a main function taking a swrap for 
@@ -556,6 +588,7 @@ let loop engine =
       food = [];
       tmap = Array.make_matrix 1 1 proto_tile; 
       go_time = 0.0;
+      now_occupied = Hashtbl.create 20;
      }
   in
     for count_row = 0 to (Array.length proto_gstate.tmap - 1) do

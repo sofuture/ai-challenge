@@ -35,6 +35,7 @@ type tgame_state = {
   food : (int * int) list;
   tmap : mapb array array;
   go_time : float;
+  now_occupied : (int * int, int) Hashtbl.t;
 }
 type dir = [ `E | `N | `S | `Stop | `W ]
 type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
@@ -66,6 +67,10 @@ val clear_tile : mapb -> int -> int -> mapb
 val clear_gstate : tgame_state -> tgame_state
 val add_hill : tgame_state -> int -> int -> int -> tgame_state
 val add_ant : tgame_state -> int -> int -> int -> tgame_state
+val reset_occupied : tgame_state -> unit
+val remove_occupied_location : tgame_state -> int * int -> unit
+val add_occupied_location : tgame_state -> int * int -> unit
+val is_occupied_location : tgame_state -> int * int -> bool
 val add_dead_ant : tgame_state -> int -> int -> int -> tgame_state
 val initialize_map : tgame_state -> tgame_state
 val add_line : tgame_state -> string -> tgame_state
@@ -106,6 +111,7 @@ class swrap :
   tgame_state ->
   object
     val mutable state : tgame_state
+    method add_occupied : int * int -> unit
     method bounds : int * int
     method centre : int * int
     method direction : int * int -> int * int -> dir * dir
@@ -121,10 +127,13 @@ class swrap :
     method get_player_seed : int
     method get_state : tgame_state
     method get_tile : int * int -> tile
+    method is_occupied : int * int -> bool
     method issue_order : order -> unit
     method my_ants : ant list
     method my_hills : ((int * int) * int) list
     method passable : int * int -> bool
+    method remove_occupied : int * int -> unit
+    method reset_occupied : unit
     method set_state : tgame_state -> unit
     method step_dir : int * int -> dir -> int * int
     method time_remaining : float
