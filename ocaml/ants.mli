@@ -13,14 +13,17 @@ type game_setup = {
   player_seed : int;
 }
 type mapb = { content : int; seen : int; row : int; col : int; }
+type role = [ `Dead | `Explorer | `Freelancer | `Guard | `Warrior ]
 class ant :
   row:int ->
   col:int ->
   owner:int ->
+  role:role ->
   object
     method col : int
     method loc : int * int
     method owner : int
+    method role : role
     method row : int
     method to_string : string
   end

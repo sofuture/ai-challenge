@@ -33,7 +33,10 @@ type mapb = {
     col : int;
 };;
 
-class ant ~row ~col ~owner = object
+type role = [`Freelancer | `Guard | `Explorer | `Warrior | `Dead];;
+
+class ant ~row ~col ~owner ~(role:role) = object
+    method role = role 
     method loc = row, col
     method row = row
     method col = col
@@ -184,7 +187,7 @@ let add_hill gstate row col owner =
 let add_ant gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (100 + owner) };
-        let new_ant = new ant row col owner in
+        let new_ant = new ant row col owner `Freelancer in
         match owner with
         | 0 ->
             {gstate with my_ants = (new_ant :: gstate.my_ants)}
@@ -216,7 +219,7 @@ let is_occupied_location gstate loc =
 let add_dead_ant gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (200 + owner) };
-        let new_ant = new ant row col owner in
+        let new_ant = new ant row col owner `Dead in
         { gstate with dead_ants = (new_ant :: gstate.dead_ants) }
     ) with _ -> gstate;;
 
