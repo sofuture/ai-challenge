@@ -37,9 +37,9 @@ open Ants;;
 
 type 'a option =
     | None
-    | Some of 'a
+    | Some of 'a;;
 
-type mtile = (int * int) 
+type mtile = (int * int);;
 
 type survey = {
     ant: ant option;
