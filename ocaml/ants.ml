@@ -6,13 +6,15 @@ open Unix;;
 
 open Hashtbl;;
 
-let out_chan = open_out "mybot_err.log";;
+(*let out_chan = open_out "mybot_err.log";;*)
 
 let get_time () = Unix.gettimeofday ();;
 
-let ddebug s = 
+let ddebug s = ();;
+(*
     output_string out_chan s; 
     flush out_chan;;
+*)
 
 type game_setup = {
     loadtime : int;
