@@ -211,12 +211,15 @@ let rec submit_orders state orders acc =
 let mybot_engine state =
     if state#turn = 0 then (
         Random.self_init ();
+        state#update_vision;
+        state#reset_occupied;
         state#finish_turn ()
     ) else (
         state#update_vision;
         state#reset_occupied;
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
-        let _orders = step_ants state state#my_ants [] in
+        let _ = step_ants state state#my_ants [] in
+        ddebug (Printf.sprintf "time remaining: %f\n" state#time_remaining);
         state#finish_turn ()
     );;
 
