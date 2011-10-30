@@ -1,6 +1,5 @@
-val out_chan : out_channel
 val get_time : unit -> float
-val ddebug : string -> unit
+val ddebug : 'a -> unit
 type game_setup = {
   loadtime : int;
   turntime : int;

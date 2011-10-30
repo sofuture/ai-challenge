@@ -35,6 +35,12 @@ let sym_of_cell cval =
     else if cval = `Goal then "G"
     else " ";;
 
+let rec print_point_list plist acc = 
+    match plist with
+    | [] -> Printf.printf "%s\n" acc
+    | (hr,hc) :: t ->
+        print_point_list t ( (Printf.sprintf "(%d,%d) " hr hc) ^ acc);;
+
 let cells_from (r,c) =
     let pot = 
         [ (r-1, c-1); (r-1, c); (r-1, c+1);
@@ -70,9 +76,12 @@ let populate_data () =
     done;
     (origin, goal, dat);;
 
-let (origin, goal, mdat) = populate_data () in
-let (orr,orc) = Hashtbl.find origin `Origin in
-let (gr,gc) = Hashtbl.find goal `Goal in
-Printf.printf "Origin at (%d,%d)\n" orr orc;
-Printf.printf "Goal at (%d,%d)\n" gr gc;
-print_map mdat
+
+let _ = 
+    print_point_list [(0,0);(0,1);(5,5)] "";
+    let (origin, goal, mdat) = populate_data () in
+    let (orr,orc) = Hashtbl.find origin `Origin in
+    let (gr,gc) = Hashtbl.find goal `Goal in
+    Printf.printf "Origin at (%d,%d)\n" orr orc;
+    Printf.printf "Goal at (%d,%d)\n" gr gc;
+    print_map mdat;;

@@ -9,13 +9,20 @@ sh build.sh
 --end_wait=0.25 --verbose \
 --log_dir tools/game_logs \
 --turntime=300 \
---turns 1000 \
+--turns 100 \
 --map_file tools/maps/random_walk_08p_02.map \
-"python tools/sample_bots/python/LeftyBot.py" \
-"python tools/sample_bots/python/LeftyBot.py" \
-"python tools/sample_bots/python/LeftyBot.py" \
-"python tools/sample_bots/python/LeftyBot.py" \
-"python tools/sample_bots/python/LeftyBot.py" \
-"python tools/sample_bots/python/LeftyBot.py" \
-"python tools/sample_bots/python/LeftyBot.py" \
+"./ocaml/MyBot.native" \
+"./ocaml/MyBot.native" \
+"./ocaml/MyBot.native" \
+"./ocaml/MyBot.native" \
+"./ocaml/MyBot.native" \
+"./ocaml/MyBot.native" \
+"./ocaml/MyBot.native" \
 "./ocaml/MyBot.native" 
+#"python tools/sample_bots/python/LeftyBot.py" \
+#"python tools/sample_bots/python/LeftyBot.py" \
+#"python tools/sample_bots/python/LeftyBot.py" \
+#"python tools/sample_bots/python/LeftyBot.py" \
+#"python tools/sample_bots/python/LeftyBot.py" \
+#"python tools/sample_bots/python/LeftyBot.py" \
+#"python tools/sample_bots/python/LeftyBot.py" \
