@@ -42,14 +42,15 @@ let rec print_point_list plist acc =
         print_point_list t ( (Printf.sprintf "(%d,%d) " hr hc) ^ acc);;
 
 let cells_from (r,c) =
-    let pot = 
-        [ (r-1, c-1); (r-1, c); (r-1, c+1);
-          (r,   c-1);           (r,   c+1);
-          (r+1, c-1); (r+1, c); (r+1, c+1) ] in
-
+    let pot = [ (r-1, c); (r, c-1); (r, c+1); (r+1, c); ] in
     let valid (fr,fc) = 
         (fr >= 0) && (fr < mheight) && (fc >= 0) && (fc < mwidth) in
     List.filter valid pot;;
+
+let new_cells_from loc known =
+    let temp = cells_from loc in
+    let valid el = not (List.mem el known) in
+    List.filter valid temp;;
 
 let print_map mdat = 
     for i = 0 to mheight - 1 do
@@ -76,12 +77,26 @@ let populate_data () =
     done;
     (origin, goal, dat);;
 
+(*let rec explore map (sr,sc) (gr, gc) known path =
+    if sr = gr && sc = gc 
+        then (List.length known, path) 
+    else
+        let next = new_cells_from (sr,sc) known in
+        let rec inner mnext =
+            match mnext with
+            | [] -> ()
+            | (nr,nc) :: t ->
+                    explore map (nr,nc) (gr,gc) (nr,nc)::known (nr,nc)::path; 
+                    ()
+                        print_point_list next "";*)
 
 let _ = 
-    print_point_list [(0,0);(0,1);(5,5)] "";
     let (origin, goal, mdat) = populate_data () in
     let (orr,orc) = Hashtbl.find origin `Origin in
     let (gr,gc) = Hashtbl.find goal `Goal in
     Printf.printf "Origin at (%d,%d)\n" orr orc;
     Printf.printf "Goal at (%d,%d)\n" gr gc;
-    print_map mdat;;
+    print_point_list (new_cells_from (orr,orc) [(14,3)]) "";
+    print_point_list (cells_from (orr,orc)) "" 
+    (*print_map mdat*)
+;;
