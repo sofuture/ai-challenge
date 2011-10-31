@@ -61,7 +61,6 @@ val set_player_seed : tgame_state -> int -> tgame_state
 val uncomment : string -> string
 val sscanf_cps :
   ('a, Scanf.Scanning.scanbuf, 'b, 'c -> 'd, 'a -> 'e, 'e) format6 ->
- (* ('a, Scanf.Scanning.in_channel, 'b, 'c -> 'd, 'a -> 'e, 'e) format6 ->*)
   'c -> (string -> 'd) -> string -> 'd
 val add_food : tgame_state -> int -> int -> tgame_state
 val remove_food : tgame_state -> int -> int -> tgame_state
