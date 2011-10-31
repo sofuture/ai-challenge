@@ -374,6 +374,7 @@ class House:
         working_directory = self.working_directory
         self.child_queue = Queue()
         shell_command = shlex.split(shell_command.replace('\\','/'))
+        shell_command.append("-lol")
         try:
             self.command_process = subprocess.Popen(shell_command,
                                                     stdin=subprocess.PIPE,
