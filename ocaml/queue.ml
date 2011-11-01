@@ -1,7 +1,8 @@
-module Queue = struct
-    type 'a t = ('a list * 'a list) ref;;
 
-    exception Empty;;
+type 'a queue = ('a list * 'a list) ref;;
+
+module Queue = struct
+    exception Empty
 
     let create () = ref ([], []);;
 

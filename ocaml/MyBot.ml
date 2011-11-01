@@ -37,26 +37,6 @@ open Ants;;
 
 (* because i don't know how to use this from an external file
  * or more specifically, it doesnt work as expected *)
-module Queue = struct
-    type 'a t = ('a list * 'a list) ref
-    exception Empty
-
-    let create () = ref ([], []);;
-
-    let add queue x =
-        let front, back = !queue in
-        queue := (x::front, back);;
-
-    let rec take queue =
-        match !queue with
-        | ([], []) ->
-            raise Empty
-        | (front, x::back) ->
-            queue := (front, back); x
-        | (front, []) ->
-            queue := ([], List.rev front);
-            take queue;;
-end;;
 
 type 'a option =
     | None
@@ -232,6 +212,9 @@ let rec submit_orders state orders acc =
 (* ----------- *)
 
 let mybot_engine state =
+    let q = Queue.create () in
+    Queue.add q 5;
+    ddebug (Printf.sprintf "%d\n" (Queue.take q));
     if state#turn = 0 then (
         Random.self_init ();
         state#update_vision;

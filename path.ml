@@ -5,33 +5,6 @@ open Printf;;
 
 open Queue;;
 
-module Queue = struct
-    type 'a t = ('a list * 'a list) ref;;
-
-    exception Empty;;
-
-    let create () = ref ([], []);;
-
-    let add queue x =
-        let front, back = !queue in
-        queue := (x::front, back);;
-
-    let rec take queue =
-        match !queue with
-        | ([], []) ->
-            raise Empty
-        | (front, x::back) ->
-            queue := (front, back); x
-        | (front, []) ->
-            queue := ([], List.rev front);
-            take queue;;
-
-    let length queue =
-        let front, back = !queue in
-        List.length front + List.length back;;
-
-end;;
-
 type ctype = [`Goal | `Origin | `Empty | `Blocked | `Seen];;
 type direction = [`N | `S | `E | `W];;
 type cell = ctype * int;;
@@ -153,7 +126,8 @@ let rec explore mdat frontier goal explored =
                 Printf.printf "yay\n";
                 print_point_list [h] "";
                 let nc = new_cells_from mdat h explored in
-                List.iter (fun x -> Queue.add frontier x) nc;
+                let add x = Queue.add frontier x; () in
+                let _i = List.iter add nc in
                 explore mdat frontier goal (h::explored)
             )
         )

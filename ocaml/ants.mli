@@ -1,3 +1,11 @@
+type 'a queue = ('a list * 'a list) ref
+module Queue :
+  sig
+    exception Empty
+    val create : unit -> ('a list * 'b list) ref
+    val add : ('a list * 'b) ref -> 'a -> unit
+    val take : ('a list * 'a list) ref -> 'a
+  end
 val out_chan : out_channel
 val get_time : unit -> float
 val ddebug : string -> unit
