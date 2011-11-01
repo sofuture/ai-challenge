@@ -35,6 +35,29 @@ open Ants;;
 (* explicit types *)
 (* -------------- *)
 
+(* because i don't know how to use this from an external file
+ * or more specifically, it doesnt work as expected *)
+module Queue = struct
+    type 'a t = ('a list * 'a list) ref
+    exception Empty
+
+    let create () = ref ([], []);;
+
+    let add queue x =
+        let front, back = !queue in
+        queue := (x::front, back);;
+
+    let rec take queue =
+        match !queue with
+        | ([], []) ->
+            raise Empty
+        | (front, x::back) ->
+            queue := (front, back); x
+        | (front, []) ->
+            queue := ([], List.rev front);
+            take queue;;
+end;;
+
 type 'a option =
     | None
     | Some of 'a;;
