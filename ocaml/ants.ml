@@ -10,7 +10,7 @@ let out_chan = open_out "mybot_err.log";;
 
 let get_time () = Unix.gettimeofday ();;
 
-
+(* our local setup runs our bot with -lol to log *)
 let ddebug s =
     if Array.length Sys.argv > 1 then
     (

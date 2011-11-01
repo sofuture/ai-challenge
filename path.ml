@@ -2,6 +2,7 @@ open Hashtbl;;
 open Printf;;
 
 type cell = [`Goal | `Origin | `Empty | `Blocked];;
+type direction = [`N | `S | `E | `W];;
 
 let mwidth = 15;;
 let mheight = 15;;
@@ -22,6 +23,19 @@ let map =
     [0;0;0;0;0;0;0;0;0;0;0;0;0;0;0];
     [0;0;8;0;0;0;0;0;0;0;0;0;0;0;0];
     [0;0;0;0;0;0;0;0;0;0;0;0;0;0;0]];;
+
+(*let navigate origin dir = function
+    | (orr,orc), `N -> (orr-1, orc)
+    | (orr,orc), `S -> (orr+1, orc)
+    | (orr,orc), `E -> (orr, orc+1)
+    | (orr,orc), `W -> (orr, orc-1)
+
+let rec nav_dirs origin dirs = function
+    | point, [] -> point
+    | point, h::t -> 
+        let next = navigate point h in
+        nav_dirs next t;;
+*)
 
 let cell_of_int ival = 
     if ival = 1 then `Blocked
@@ -77,6 +91,19 @@ let populate_data () =
     done;
     (origin, goal, dat);;
 
+let abs v = 
+    if v < 0 then -v
+    else v;;
+
+let cost (orr,orc) (nr,nc) = abs (orr - nr) + abs (orc - nc);;
+
+let explore map (orr,orc) (gr,gc) =
+    let frontier = cells_from (orr,orc) in
+    List.iter (fun (xr,xc) ->
+        Printf.printf "(%d,%d) -> (%d,%d) = %d\n" orr orc xr xc 
+            (cost (orr,orc) (xr,xc))) frontier;;
+
+
 (*let rec explore map (sr,sc) (gr, gc) known path =
     if sr = gr && sc = gc 
         then (List.length known, path) 
@@ -96,7 +123,9 @@ let _ =
     let (gr,gc) = Hashtbl.find goal `Goal in
     Printf.printf "Origin at (%d,%d)\n" orr orc;
     Printf.printf "Goal at (%d,%d)\n" gr gc;
-    print_point_list (new_cells_from (orr,orc) [(14,3)]) "";
+    explore mdat (orr,orc) (gr,gc);;
+
+(*    print_point_list (new_cells_from (orr,orc) [(14,3)]) "";
     print_point_list (cells_from (orr,orc)) "" 
     (*print_map mdat*)
-;;
+;;*)
