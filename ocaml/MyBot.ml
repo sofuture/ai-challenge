@@ -58,21 +58,12 @@ type order = ant * dir;;
 
 type hill_guards = location * ant list;;
 
-type survey = {
-    ant: ant option;
-    distance: float;
-    thing: tile option;
-    loc: location;
-};;
+type survey = ant option * float * tile option * location;;
 
 (* helpers for initializing types *)
 
-let dummy_survey = {
-    ant = None;
-    distance = 1000.0;
-    thing = None;
-    loc = 0, 0;
-};;
+let dummy_survey = 
+    (None, 1000., None, (0,0));;
 
 (* ------------- *)
 (* general utils *)
@@ -88,11 +79,11 @@ let shuffle l =
     done;
     Array.to_list ar;;
 
-let min_fd curr acc =
-    if curr.distance < acc.distance then
-        curr
-    else
-        acc;;
+let min_distance curr acc =
+    let (_, cd, _, _) = curr in
+    let (_, ad, _, _) = acc in
+    if cd < ad then curr
+    else acc;;
 
 (* game specific utils *)
 
@@ -188,12 +179,8 @@ let thing_distances state ant ttypes =
                 match c with 
                 | ((row:int), (col:int)) ->
                     ddebug (Printf.sprintf "thing at (%d, %d)\n" row col);
-                    { 
-                        ant = Some ant;
-                        distance = state#distance ant#loc (row, col);
-                        thing = Some h;
-                        loc = row, col;
-                    } in
+                    let loc = (row, col) in 
+                    (Some ant, state#distance ant#loc loc, Some h, loc) in
             let dt = List.map tdist (get_type_tiles state h) in
             inner t (dt @ acc) in
     inner ttypes [];;
@@ -201,9 +188,10 @@ let thing_distances state ant ttypes =
 (* find how far all known food is from given ant *)
 let food_distances state ant = thing_distances state ant [`Food];;
 
-(* find food closest to given ant *)
+(* find desired thing closest to given ant *)
 let find_best_move_for_ant state ant =
-    List.fold_left min_fd dummy_survey (thing_distances state ant [`Food; `Hill]);;
+    let distances = thing_distances state ant [`Food] in
+    List.fold_left min_distance dummy_survey distances;;
 
 (* --------- *)
 (* ant logic *)
@@ -218,7 +206,10 @@ let step_ant_goal state ant goal =
 
 let step_ant state ant =
     let bf = find_best_move_for_ant state ant in
-    step_ant_goal state ant bf.loc;;
+    let (_, _, _, loc) = bf in
+    let r, c = loc in
+    ddebug (Printf.sprintf "%d,%d\n" r c);
+    step_ant_goal state ant loc;;
 
 (* ----------- *)
 (* group logic *)
