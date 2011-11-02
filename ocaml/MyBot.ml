@@ -144,15 +144,19 @@ let get_type_tiles state ttype =
             List.map (fun ((r,c),o) -> (r,c)) state#enemy_hills
     | `Unseen -> [];;
 
-let find_n_closest_ants state loc n =
-    let ants = state#my_ants in
-    let dsort ant = state#distance2 loc ant#loc in
+let find_n_closest_ants state ants loc n =
+    let dsort ant ant2= 
+        let ant_distance = state#distance2 loc ant#loc in
+        let ant2_distance = state#distance2 loc ant2#loc in
+        compare ant_distance ant2_distance in
     let sorted = List.sort dsort ants in
     let rec get_n inp acc =
-        if List.length acc = n then acc
-        else match inp with
-        | [] -> acc
-        | h::t -> get_n t (h::acc) in
+        if List.length acc = n then 
+            (acc, inp)
+        else 
+            match inp with
+            | [] -> (acc, inp)
+            | h::t -> get_n t (h::acc) in
     get_n sorted [];;
 
 let string_of_role role = 
@@ -203,25 +207,41 @@ let find_best_move_for_ant state ant =
 (* ant logic *)
 (* --------- *)
 
-let step_ant state ant =
-    let bf = find_best_move_for_ant state ant in
-    let ((dd1, dd2), _) = state#distance_and_direction ant#loc bf.loc in
+let step_ant_goal state ant goal =
+    let ((dd1, dd2), _) = state#distance_and_direction ant#loc goal in
     let sh_dir = shuffle [dd1; dd2] in
     let sh_rem = shuffle [`N; `E; `S; `W] in
     let dirs = sh_dir @ sh_rem in
     try_steps state ant dirs;;
+
+let step_ant state ant =
+    let bf = find_best_move_for_ant state ant in
+    step_ant_goal state ant bf.loc;;
 
 (* ----------- *)
 (* group logic *)
 (* ----------- *)
 
 (* get orders for all ants *)
-let rec step_ants state my_l acc =
+let rec step_free_ants state my_l acc =
     match my_l with
     | [] -> acc
     | head :: tail ->
         let order = step_ant state head in
-        step_ants state tail (order :: acc);;
+        step_free_ants state tail (order :: acc);;
+
+(* get orders for guarding ants *)
+let rec step_guard_ants state my_l acc =
+    match my_l with
+    | [] -> acc
+    | (hill,ants) :: tail ->
+        let rec single_guard acc ants =
+            match ants with 
+            | [] -> acc
+            | h::t ->
+                let order = step_ant_goal state h hill in
+                single_guard (order :: acc) t in
+        step_guard_ants state tail (single_guard [] ants)@acc;;
 
 let rec submit_orders state orders acc =
     match orders with
@@ -234,8 +254,15 @@ let rec submit_orders state orders acc =
         state#issue_order (order.subj#loc, order.dir);
         submit_orders state t acc;;
 
-let rec give_roles ants =
-    ants;;
+let give_roles state ants =
+    if List.length state#my_ants < (5 * List.length state#my_hills) then
+        ([], ants)
+    else 
+        let hills = state#my_hills in
+        let fg (guards, left) (hill,_) =
+            let guards_new, left_new = find_n_closest_ants state left hill 3 in
+            ((hill, guards_new) :: guards, left_new) in    
+        List.fold_left fg ([], ants) hills;;
 
 (* ----------- *)
 (* goooooooo!! *)
@@ -250,8 +277,9 @@ let mybot_engine state =
         state#finish_turn ()
     ) else (
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
-        let roled_ants = give_roles state#my_ants in
-        let _ = step_ants state roled_ants [] in
+        let (guards, free) = give_roles state state#my_ants in
+        let _ = step_free_ants state free [] in
+        let _ = step_guard_ants state guards [] in
         ddebug (Printf.sprintf "time remaining: %f\n" state#time_remaining);
         state#finish_turn ()
     );;
