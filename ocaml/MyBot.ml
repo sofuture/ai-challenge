@@ -1,5 +1,3 @@
-open Ants;;
-
 (* 
              '-=.          K I L L
            ,-"=. \          A L L
@@ -30,6 +28,8 @@ open Ants;;
     
 *)
 
+open Ants;;
+open Queue;;
 
 (* -------------- *)
 (* explicit types *)
@@ -144,6 +144,33 @@ let get_type_tiles state ttype =
             List.map (fun ((r,c),o) -> (r,c)) state#enemy_hills
     | `Unseen -> [];;
 
+let find_n_closest_ants state loc n =
+    let ants = state#my_ants in
+    let dsort ant = state#distance2 loc ant#loc in
+    let sorted = List.sort dsort ants in
+    let rec get_n inp acc =
+        if List.length acc = n then acc
+        else match inp with
+        | [] -> acc
+        | h::t -> get_n t (h::acc) in
+    get_n sorted [];;
+
+let string_of_role role = 
+    match role with 
+    | `Freelancer -> "`Freelancer"
+    | `Guard -> "`Guard"
+    | `Explorer -> "`Explorer"
+    | `Warrior -> "`Warrior"
+    | `Dead -> "`Dead";;
+ 
+let rec print_ant_list ants =
+    match ants with
+    | [] -> ()
+    | h::t ->
+        let r, c = h#loc in
+        let role = string_of_role h#role in
+        ddebug (Printf.sprintf "(%d,%d) - %s\n" r c role);
+        print_ant_list t;;
 
 (* find how far all known <thing> is from given ant *)
 let thing_distances state ant ttypes =
@@ -206,25 +233,25 @@ let rec submit_orders state orders acc =
         ddebug (Printf.sprintf "at (%d,%d) want to move to (%d, %d)\n" atr atc r c);
         state#issue_order (order.subj#loc, order.dir);
         submit_orders state t acc;;
-        
+
+let rec give_roles ants =
+    ants;;
+
 (* ----------- *)
 (* goooooooo!! *)
 (* ----------- *)
 
 let mybot_engine state =
-    let q = Queue.create () in
-    Queue.add q 5;
-    ddebug (Printf.sprintf "%d\n" (Queue.take q));
+    state#update_vision;
+    state#reset_occupied;
+    print_ant_list state#my_ants;
     if state#turn = 0 then (
         Random.self_init ();
-        state#update_vision;
-        state#reset_occupied;
         state#finish_turn ()
     ) else (
-        state#update_vision;
-        state#reset_occupied;
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
-        let _ = step_ants state state#my_ants [] in
+        let roled_ants = give_roles state#my_ants in
+        let _ = step_ants state roled_ants [] in
         ddebug (Printf.sprintf "time remaining: %f\n" state#time_remaining);
         state#finish_turn ()
     );;

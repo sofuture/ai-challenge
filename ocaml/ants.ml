@@ -6,7 +6,6 @@ open Unix;;
 
 open Hashtbl;;
 
-
 let out_chan = open_out "mybot_err.log";;
 
 let get_time () = Unix.gettimeofday ();;
