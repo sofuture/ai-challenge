@@ -45,9 +45,6 @@ let guards_per_hill = 5;;
 (* explicit types *)
 (* -------------- *)
 
-(* because i don't know how to use this from an external file
- * or more specifically, it doesnt work as expected *)
-
 type 'a option =
     | None
     | Some of 'a;;
