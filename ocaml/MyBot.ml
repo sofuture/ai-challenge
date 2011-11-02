@@ -52,18 +52,17 @@ type 'a option =
     | None
     | Some of 'a;;
 
-type mtile = (int * int);;
+type location = int * int;;
+
+type order = ant * dir;;
+
+type hill_guards = location * ant list;;
 
 type survey = {
     ant: ant option;
     distance: float;
     thing: tile option;
-    loc: int * int;
-};;
-
-type order = {
-    subj: ant;
-    dir: dir;
+    loc: location;
 };;
 
 (* helpers for initializing types *)
@@ -101,13 +100,7 @@ let not_water state loc =
     not ((state#get_tile loc) = `Water);;
 
 let no_dudes state loc =
-    let r, c = loc in
-    let occupied = state#is_occupied loc in
-    if occupied then
-        ddebug (Printf.sprintf "checking %d,%d is occupied \n" r c)
-    else
-        ddebug (Printf.sprintf "checking %d,%d is not occupied \n" r c);
-    not occupied;;
+    not (state#is_occupied loc);;
 
 let valid_move state loc =
     no_dudes state loc && not_water state loc;;
@@ -116,10 +109,10 @@ let valid_move state loc =
  * return the move that works *)
 let rec try_steps state ant dirs =
     match dirs with 
-    | [] -> {subj = ant; dir = `Stop}
+    | [] -> (ant, `Stop)
     | `Stop :: tail -> try_steps state ant tail
-    | d :: tail ->
-        let new_loc = state#step_dir ant#loc d in
+    | dir :: tail ->
+        let new_loc = state#step_dir ant#loc dir in
         if valid_move state new_loc then
         (
             let orr, oc = ant#loc in
@@ -128,9 +121,8 @@ let rec try_steps state ant dirs =
             ddebug (Printf.sprintf "going to %d %d\n" nr nc);
             state#remove_occupied ant#loc;
             state#add_occupied new_loc;
-            let order = {subj = ant; dir = d} in
-            state#issue_order (order.subj#loc, order.dir);
-            order
+            state#issue_order (ant#loc, dir);
+            (ant, dir)
         ) else
             try_steps state ant tail;;
 
@@ -256,12 +248,12 @@ let rec step_guard_ants state my_l acc =
 let rec submit_orders state orders acc =
     match orders with
     | [] -> ()
-    | order :: t ->
-        let coord = state#step_dir order.subj#loc order.dir in
-        let atr, atc = order.subj#loc in
+    | (ant, dir) :: t ->
+        let coord = state#step_dir ant#loc dir in
+        let atr, atc = ant#loc in
         let r, c = coord in
         ddebug (Printf.sprintf "at (%d,%d) want to move to (%d, %d)\n" atr atc r c);
-        state#issue_order (order.subj#loc, order.dir);
+        state#issue_order (ant#loc, dir);
         submit_orders state t acc;;
 
 let should_we_guard state =
