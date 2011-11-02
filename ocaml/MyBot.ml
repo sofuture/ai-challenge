@@ -31,6 +31,16 @@
 open Ants;;
 open Queue;;
 
+(* --------------- *)
+(* strategy params *)
+(* --------------- *)
+
+(* hill guarding behavior *)
+
+let minimum_ants_alive_per_hill_for_guarding = 5;;
+
+let guards_per_hill = 3;;
+
 (* -------------- *)
 (* explicit types *)
 (* -------------- *)
@@ -254,13 +264,18 @@ let rec submit_orders state orders acc =
         state#issue_order (order.subj#loc, order.dir);
         submit_orders state t acc;;
 
+let should_we_guard state =
+    let ant_count = List.length state#my_ants in
+    let hill_count = List.length state#my_hills in
+    ant_count >= (hill_count * minimum_ants_alive_per_hill_for_guarding);;
+
 let give_roles state ants =
-    if List.length state#my_ants < (5 * List.length state#my_hills) then
+    if should_we_guard state then
         ([], ants)
-    else 
+    else
         let hills = state#my_hills in
         let fg (guards, left) (hill,_) =
-            let guards_new, left_new = find_n_closest_ants state left hill 3 in
+            let guards_new, left_new = find_n_closest_ants state left hill guards_per_hill in
             ((hill, guards_new) :: guards, left_new) in    
         List.fold_left fg ([], ants) hills;;
 
