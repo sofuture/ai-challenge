@@ -1,5 +1,6 @@
 *.swp
 *.native
+*.debug
 _build
 .DS_Store
 *.pyc
