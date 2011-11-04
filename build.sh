@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
 cd ocaml
-rm MyBot.debug
-rm MyBot.native
-rm ants.mli
-rm queue.mli
+rm -f MyBot.debug
+rm -f MyBot.native
+rm -f ants.mli
+rm -f queue.mli
 rm -rf _build/
 ocamlc -g -i queue.ml > queue.mli
 ocamlc -g -i ants.ml | sed 's/in_channel/scanbuf/g' > ants.mli 
