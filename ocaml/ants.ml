@@ -492,6 +492,7 @@ class swrap state =
         method remove_occupied loc = remove_occupied_location state loc
         method add_occupied loc = add_occupied_location state loc
         method reset_occupied = reset_occupied state
+        method map = state.mmap
     end;;
 
 (* Main game loop. Bots should define a main function taking a swrap for 

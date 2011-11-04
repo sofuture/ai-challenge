@@ -133,6 +133,7 @@ class swrap :
     method get_tile : int * int -> tile
     method is_occupied : int * int -> bool
     method issue_order : order -> unit
+    method map : (int * int, mapb) Hashtbl.t
     method my_ants : ant list
     method my_hills : ((int * int) * int) list
     method passable : int * int -> bool
