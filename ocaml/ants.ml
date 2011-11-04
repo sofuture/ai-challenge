@@ -14,11 +14,10 @@ let get_time () = Unix.gettimeofday ();;
 
 (* our local setup runs our bot with -lol to log *)
 let ddebug s =
-    if Array.length Sys.argv > 1 then
+    if Array.length Sys.argv > 1 then (
         output_string out_chan s; 
         flush out_chan
-     else 
-        ();;
+    ) else ();;
 
 type game_setup = {
     loadtime : int;
