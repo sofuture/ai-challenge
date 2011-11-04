@@ -1,6 +1,8 @@
-(* ocaml Ants starter package. Code has been borrowed from the ocaml
-PlanetWars starter package and adapted. If you find any bugs or make 
-any improvements, please post to the forum or upload a fix! *)
+(*
+ * Started as the OCaml starter bot package
+ *
+ * Shit is about to get tore up
+ *)
 
 open Unix;;
 
@@ -13,10 +15,9 @@ let get_time () = Unix.gettimeofday ();;
 (* our local setup runs our bot with -lol to log *)
 let ddebug s =
     if Array.length Sys.argv > 1 then
-    (
         output_string out_chan s; 
         flush out_chan
-    ) else 
+     else 
         ();;
 
 type game_setup = {
@@ -50,7 +51,7 @@ class ant ~row ~col ~owner ~(role:role) = object
         Printf.sprintf "Ant at %d, %d belongs to player %d" row col owner;
 end;;
 
-type tgame_state = { 
+type tgame_state = {
     setup : game_setup;
     turn : int;
     my_ants : ant list;
@@ -62,6 +63,7 @@ type tgame_state = {
     tmap: mapb array array; 
     go_time: float;
     now_occupied : ((int * int), int) Hashtbl.t;
+    mmap : ((int * int), mapb) Hashtbl.t;
 };;
 
 type dir = [ `N | `E | `S | `W | `Stop];;
@@ -525,7 +527,9 @@ let loop engine =
         food = [];
         tmap = Array.make_matrix 1 1 proto_tile; 
         go_time = 0.0;
-        now_occupied = Hashtbl.create 20; } in
+        now_occupied = Hashtbl.create 20; 
+        mmap = Hashtbl.create 200;
+    } in
 
     for count_row = 0 to (Array.length proto_gstate.tmap - 1) do
         let test_row = proto_gstate.tmap.(count_row) in

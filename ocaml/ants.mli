@@ -39,6 +39,7 @@ type tgame_state = {
   tmap : mapb array array;
   go_time : float;
   now_occupied : (int * int, int) Hashtbl.t;
+  mmap : (int * int, mapb) Hashtbl.t;
 }
 type dir = [ `E | `N | `S | `Stop | `W ]
 type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
