@@ -359,7 +359,7 @@ let move_ant gstate f_loc dir t_loc =
     Hashtbl.iter (fun (r,c) v -> ddebug (Printf.sprintf "ant at %d,%d\n" r c); ()) gstate.mmy_ants;
     let a = Hashtbl.find gstate.mmy_ants f_loc in
     Hashtbl.remove gstate.mmy_ants f_loc;
-    Hashtbl.add gstate.mmy_ants t_loc {a with loc = t_loc};
+    Hashtbl.add gstate.mmy_ants t_loc {a with loc = t_loc; r = tr; c = tc };
     remove_occupied_location gstate f_loc;
     add_occupied_location gstate t_loc;
     issue_order (f_loc, dir);;
