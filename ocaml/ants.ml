@@ -236,6 +236,7 @@ let is_occupied_location gstate loc =
         Hashtbl.mem gstate.now_occupied loc
     ) with _ -> false;;
 
+
 let add_dead_ant gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (200 + owner) };
@@ -330,6 +331,11 @@ let read gstate =
 let issue_order ((row, col), cdir) =
     let os = Printf.sprintf "o %d %d %s\n" row col (string_of_dir cdir) in
     Printf.printf "%s" os;;
+
+let move_ant gstate f_loc dir t_loc =
+    remove_occupied_location gstate f_loc;
+    add_occupied_location gstate t_loc;
+    issue_order (f_loc, dir);;
 
 (* Print go, newline, and flush buffer *)
 let finish_turn () = 
@@ -506,6 +512,7 @@ class swrap state =
         method remove_occupied loc = remove_occupied_location state loc
         method add_occupied loc = add_occupied_location state loc
         method reset_occupied = reset_occupied state
+        method move_ant loc1 (d:dir) loc2 = move_ant state loc1 d loc2
     end;;
 
 (* Main game loop. Bots should define a main function taking a swrap for 

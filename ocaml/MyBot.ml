@@ -103,13 +103,7 @@ let rec try_steps state ant dirs =
         let new_loc = state#step_dir ant#loc dir in
         if valid_move state new_loc then
         (
-            let orr, oc = ant#loc in
-            let nr, nc = new_loc in
-            ddebug (Printf.sprintf "leaving %d %d\n" orr oc);
-            ddebug (Printf.sprintf "going to %d %d\n" nr nc);
-            state#remove_occupied ant#loc;
-            state#add_occupied new_loc;
-            state#issue_order (ant#loc, dir);
+            state#move_ant ant#loc dir new_loc;
             (ant, dir)
         ) else
             try_steps state ant tail;;

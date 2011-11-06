@@ -86,6 +86,9 @@ val update : tgame_state -> string list -> tgame_state
 val read_lines : unit -> string list option
 val read : tgame_state -> tgame_state option
 val issue_order : (int * int) * [< `E | `N | `S | `Stop | `W ] -> unit
+val move_ant :
+  tgame_state ->
+  int * int -> [< `E | `N | `S | `Stop | `W ] -> int * int -> unit
 val finish_turn : unit -> unit
 val step_unbound : [< `E | `N | `S | `Stop | `W ] -> int * int -> int * int
 val wrap0 : int -> int -> int
@@ -137,6 +140,7 @@ class swrap :
     method get_tile : int * int -> tile
     method is_occupied : int * int -> bool
     method issue_order : order -> unit
+    method move_ant : int * int -> dir -> int * int -> unit
     method my_ants : ant list
     method my_hills : ((int * int) * int) list
     method passable : int * int -> bool
