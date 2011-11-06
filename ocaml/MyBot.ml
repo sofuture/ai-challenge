@@ -100,10 +100,10 @@ let rec try_steps state ant dirs =
     | [] -> (ant, `Stop)
     | `Stop :: tail -> try_steps state ant tail
     | dir :: tail ->
-        let new_loc = state#step_dir ant#loc dir in
+        let new_loc = state#step_dir ant.loc dir in
         if valid_move state new_loc then
         (
-            state#move_ant ant#loc dir new_loc;
+            state#move_ant ant.loc dir new_loc;
             (ant, dir)
         ) else
             try_steps state ant tail;;
@@ -121,7 +121,7 @@ let get_type_tiles state ttype =
             state#get_food
     | `Ant -> 
             (* Ants.ant list -> (int * int) list*)
-            List.map (fun x -> x#loc) state#enemy_ants
+            List.map (fun x -> x.loc) state#enemy_ants
     | `Dead -> []
     | `Hill -> 
             (* ((int * int) * int) *)
@@ -130,8 +130,8 @@ let get_type_tiles state ttype =
 
 let find_n_closest_ants state ants loc n =
     let dsort ant ant2= 
-        let ant_distance = state#distance2 loc ant#loc in
-        let ant2_distance = state#distance2 loc ant2#loc in
+        let ant_distance = state#distance2 loc ant.loc in
+        let ant2_distance = state#distance2 loc ant2.loc in
         compare ant_distance ant2_distance in
     let sorted = List.sort dsort ants in
     let rec get_n inp acc =
@@ -155,8 +155,8 @@ let rec print_ant_list ants =
     match ants with
     | [] -> ()
     | h::t ->
-        let r, c = h#loc in
-        let role = string_of_role h#role in
+        let r, c = h.loc in
+        let role = string_of_role h.role in
         ddebug (Printf.sprintf "(%d,%d) - %s\n" r c role);
         print_ant_list t;;
 
@@ -171,7 +171,7 @@ let thing_distances state ant ttypes =
                 | ((row:int), (col:int)) ->
                     ddebug (Printf.sprintf "thing at (%d, %d)\n" row col);
                     let loc = (row, col) in 
-                    (Some ant, state#distance ant#loc loc, Some h, loc) in
+                    (Some ant, state#distance ant.loc loc, Some h, loc) in
             let dt = List.map tdist (get_type_tiles state h) in
             inner t (dt @ acc) in
     inner ttypes [];;
@@ -189,7 +189,7 @@ let find_best_move_for_ant state ant =
 (* --------- *)
 
 let step_ant_goal state ant goal =
-    let ((dd1, dd2), _) = state#distance_and_direction ant#loc goal in
+    let ((dd1, dd2), _) = state#distance_and_direction ant.loc goal in
     let sh_dir = shuffle [dd1; dd2] in
     let sh_rem = shuffle [`N; `E; `S; `W] in
     let dirs = sh_dir @ sh_rem in
@@ -227,17 +227,6 @@ let rec step_guard_ants state my_l acc =
                 single_guard (order :: acc) t in
         step_guard_ants state tail (single_guard [] ants)@acc;;
 
-let rec submit_orders state orders acc =
-    match orders with
-    | [] -> ()
-    | (ant, dir) :: t ->
-        let coord = state#step_dir ant#loc dir in
-        let atr, atc = ant#loc in
-        let r, c = coord in
-        ddebug (Printf.sprintf "at (%d,%d) want to move to (%d, %d)\n" atr atc r c);
-        state#issue_order (ant#loc, dir);
-        submit_orders state t acc;;
-
 let should_we_guard state =
     let ant_count = List.length state#my_ants in
     let hill_count = List.length state#my_hills in
@@ -265,6 +254,8 @@ let mybot_engine state =
         state#finish_turn ()
     ) else (
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
+        List.iter (fun a -> let r, c = a.loc in ddebug (Printf.sprintf "oant at %d %d\n" r
+        c)) state#my_ants;
         let (guards, free) = give_roles state state#my_ants in
         let _ = step_free_ants state free [] in
         let _ = step_guard_ants state guards [] in

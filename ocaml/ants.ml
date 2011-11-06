@@ -40,7 +40,14 @@ type mapb = {
 
 type role = [`Freelancer | `Guard | `Explorer | `Warrior | `Dead];;
 
-class ant ~row ~col ~owner ~(role:role) = object
+type ant  =
+    { role : role;
+      loc : int * int;
+      r : int;
+      c : int;
+      owner : int; };;
+
+(*class ant ~row ~col ~owner ~(role:role) = object
     method role = role 
     method loc = row, col
     method row = row
@@ -48,7 +55,7 @@ class ant ~row ~col ~owner ~(role:role) = object
     method owner = owner
     method to_string =
         Printf.sprintf "Ant at %d, %d belongs to player %d" row col owner;
-end;;
+end;;*)
 
 type tgame_state = {
     setup : game_setup;
@@ -66,8 +73,8 @@ type tgame_state = {
     
     mmy_ants : ((int * int), ant) Hashtbl.t;
     mfood : ((int * int), mapb) Hashtbl.t;
-    mmy_hills : ((int * int), mapb) Hashtbl.t;
-    menemy_hills : ((int * int), mapb) Hashtbl.t;
+    mmy_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
+    menemy_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
 };;
 
 type dir = [ `N | `E | `S | `W | `Stop];;
@@ -109,6 +116,10 @@ let int_of_tile t =
     | `Ant -> 199
     | `Dead -> 299
     | `Hill -> 399;;
+        
+let ht_to_key_list k v acc = k :: acc;;
+
+let ht_to_val_list k v acc = v :: acc;;
 
 let tile_of t seen row col =
     { content = t; seen = seen; row = row; col = col };;
@@ -158,7 +169,7 @@ let add_food gstate row col =
     let f = int_of_tile `Food in
     gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = f};
     Hashtbl.add gstate.mfood (row, col) (tile_of f gstate.turn row col);
-    {gstate with food = ((row, col) :: gstate.food)};;
+    gstate;;
 
 let remove_food gstate row col =
     if gstate.tmap.(row).(col).content = (int_of_tile `Food) then
@@ -178,6 +189,7 @@ let clear_tile t row col =
         {t with content = (int_of_tile `Land); row = row; col = col};;
 
 let clear_gstate gs =
+    ddebug "CLEARING DEBUG STATE";
     if gs.turn < 1 then 
         gs 
     else (
@@ -187,37 +199,44 @@ let clear_gstate gs =
                 test_row.(count_col) <- clear_tile test_row.(count_col) count_row count_col
             done
         done;
-        { gs with 
-            my_ants = []; enemy_ants = []; dead_ants = []; 
-            food = []; my_hills = []; enemy_hills = [] } );;
+        { gs with
+        enemy_ants = []; dead_ants = []; 
+        my_ants = Hashtbl.fold ht_to_val_list gs.mmy_ants [];
+        food = Hashtbl.fold ht_to_key_list gs.mfood [];
+        my_hills = Hashtbl.fold ht_to_val_list gs.mmy_hills [];
+        enemy_hills = Hashtbl.fold ht_to_val_list gs.menemy_hills [] } );;
 
 let add_hill gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (300 + owner) };
         match owner with
         | 0 ->
-            Hashtbl.add gstate.mmy_hills (row, col) (tile_of (300 + owner) gstate.turn row col);
-            { gstate with my_hills = (((row, col), owner) :: gstate.my_hills) }
+            Hashtbl.add gstate.mmy_hills (row, col) ((row, col), owner);
+            gstate
         | n ->
-            Hashtbl.add gstate.menemy_hills (row, col) (tile_of (300 + owner) gstate.turn row col);
-            { gstate with enemy_hills = (((row, col), owner) :: gstate.enemy_hills) }
+            Hashtbl.add gstate.menemy_hills (row, col) ((row, col), owner);
+            gstate
     ) with _ -> gstate;;
 
 let add_ant gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (100 + owner) };
-        let new_ant = new ant row col owner `Freelancer in
+        (*let new_ant = new ant row col owner `Freelancer in*)
+        let new_ant = { r = row; c = col; role = `Freelancer; loc = (row, col);
+        owner = owner} in
         match owner with
         | 0 ->
+            ddebug (Printf.sprintf "i think there is an ant at %d,%d\n" row col);
+            Hashtbl.remove gstate.mmy_ants (row, col);
             Hashtbl.add gstate.mmy_ants (row, col) new_ant;
-            {gstate with my_ants = (new_ant :: gstate.my_ants)}
+            gstate
         | n ->
-            {gstate with enemy_ants = (new_ant :: gstate.enemy_ants)}
+            gstate
     ) with _ -> gstate;;
 
 let reset_occupied gstate =
     Hashtbl.clear gstate.now_occupied;
-    let insert_loc mant = Hashtbl.add gstate.now_occupied mant#loc 0; () in
+    let insert_loc mant = Hashtbl.add gstate.now_occupied mant.loc 0; () in
     let _ = List.map insert_loc gstate.my_ants in 
     ();;
 
@@ -240,7 +259,7 @@ let is_occupied_location gstate loc =
 let add_dead_ant gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (200 + owner) };
-        let new_ant = new ant row col owner `Dead in
+        let new_ant = { r = row; c = col; loc = (row,col); owner = owner; role = `Dead} in
         { gstate with dead_ants = (new_ant :: gstate.dead_ants) }
     ) with _ -> gstate;;
 
@@ -290,10 +309,11 @@ let add_line gstate line =
         (uncomment line);;
 
 let update gstate lines =
-    let cgstate = if gstate.turn = 0 then
-        gstate
-    else
-        clear_gstate gstate in
+    let cgstate = 
+        if gstate.turn = 0 then
+            gstate
+        else
+            clear_gstate gstate in
     let ugstate = List.fold_left add_line cgstate lines in 
     if ugstate.turn = 0 then
         if ugstate.setup.rows < 0 || ugstate.setup.cols < 0 then
@@ -333,6 +353,13 @@ let issue_order ((row, col), cdir) =
     Printf.printf "%s" os;;
 
 let move_ant gstate f_loc dir t_loc =
+    let fr, fc = f_loc in
+    let tr, tc = t_loc in
+    ddebug (Printf.sprintf "ORDER (%d,%d) -> (%d,%d)\n" fr fc tr tc);
+    Hashtbl.iter (fun (r,c) v -> ddebug (Printf.sprintf "ant at %d,%d\n" r c); ()) gstate.mmy_ants;
+    let a = Hashtbl.find gstate.mmy_ants f_loc in
+    Hashtbl.remove gstate.mmy_ants f_loc;
+    Hashtbl.add gstate.mmy_ants t_loc {a with loc = t_loc};
     remove_occupied_location gstate f_loc;
     add_occupied_location gstate t_loc;
     issue_order (f_loc, dir);;
@@ -439,7 +466,7 @@ let mark_seen turn (pr, pc) tmap =
 
 (* Draw a filled vision circle around an ant *)
 let paint_fov ant gstate =
-    let c_row, c_col = ant#loc in
+    let c_row, c_col = ant.loc in
     let bounds = gstate.setup.rows, gstate.setup.cols in
     let r2 = gstate.setup.viewradius2 in
     let r = int_of_float (sqrt (float_of_int r2)) in
@@ -447,7 +474,7 @@ let paint_fov ant gstate =
     for count_rows = 0 to (r * 2) do
         for count_cols = 0 to (r * 2) do
             let pr, pc = wrap_bound bounds (ul_row + count_rows, ul_col + count_cols) in
-            if distance2 bounds (pr, pc) ant#loc <= r2 then
+            if distance2 bounds (pr, pc) ant.loc <= r2 then
                 mark_seen gstate.turn (pr, pc) gstate.tmap
         done
     done;;

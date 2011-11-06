@@ -14,19 +14,7 @@ type game_setup = {
 }
 type mapb = { content : int; seen : int; row : int; col : int; }
 type role = [ `Dead | `Explorer | `Freelancer | `Guard | `Warrior ]
-class ant :
-  row:int ->
-  col:int ->
-  owner:int ->
-  role:role ->
-  object
-    method col : int
-    method loc : int * int
-    method owner : int
-    method role : role
-    method row : int
-    method to_string : string
-  end
+type ant = { role : role; loc : int * int; r : int; c : int; owner : int; }
 type tgame_state = {
   setup : game_setup;
   turn : int;
@@ -41,8 +29,8 @@ type tgame_state = {
   now_occupied : (int * int, int) Hashtbl.t;
   mmy_ants : (int * int, ant) Hashtbl.t;
   mfood : (int * int, mapb) Hashtbl.t;
-  mmy_hills : (int * int, mapb) Hashtbl.t;
-  menemy_hills : (int * int, mapb) Hashtbl.t;
+  mmy_hills : (int * int, (int * int) * int) Hashtbl.t;
+  menemy_hills : (int * int, (int * int) * int) Hashtbl.t;
 }
 type dir = [ `E | `N | `S | `Stop | `W ]
 type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
@@ -53,6 +41,8 @@ val tile_of_int :
 val string_of_dir : [< `E | `N | `S | `Stop | `W ] -> string
 val int_of_tile :
   [< `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ] -> int
+val ht_to_key_list : 'a -> 'b -> 'a list -> 'a list
+val ht_to_val_list : 'a -> 'b -> 'b list -> 'b list
 val tile_of : int -> int -> int -> int -> mapb
 val set_turn : tgame_state -> int -> tgame_state
 val set_loadtime : tgame_state -> int -> tgame_state
@@ -112,8 +102,8 @@ val distance_and_direction :
   int * int ->
   int * int -> ([> `N | `S | `Stop ] * [> `E | `Stop | `W ]) * float
 val mark_seen : int -> int * int -> mapb array array -> unit
-val paint_fov : < loc : int * int; .. > -> tgame_state -> unit
-val update_vision : < loc : int * int; .. > list -> tgame_state -> unit
+val paint_fov : ant -> tgame_state -> unit
+val update_vision : ant list -> tgame_state -> unit
 val visible : tgame_state -> int * int -> bool
 val passable : tgame_state -> int * int -> bool
 val centre : tgame_state -> int * int
