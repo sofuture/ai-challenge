@@ -39,7 +39,10 @@ type tgame_state = {
   tmap : mapb array array;
   go_time : float;
   now_occupied : (int * int, int) Hashtbl.t;
-  mmap : (int * int, mapb) Hashtbl.t;
+  mmy_ants : (int * int, ant) Hashtbl.t;
+  mfood : (int * int, mapb) Hashtbl.t;
+  mmy_hills : (int * int, mapb) Hashtbl.t;
+  menemy_hills : (int * int, mapb) Hashtbl.t;
 }
 type dir = [ `E | `N | `S | `Stop | `W ]
 type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
@@ -50,6 +53,7 @@ val tile_of_int :
 val string_of_dir : [< `E | `N | `S | `Stop | `W ] -> string
 val int_of_tile :
   [< `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ] -> int
+val tile_of : int -> int -> int -> int -> mapb
 val set_turn : tgame_state -> int -> tgame_state
 val set_loadtime : tgame_state -> int -> tgame_state
 val set_turntime : tgame_state -> int -> tgame_state
@@ -133,7 +137,6 @@ class swrap :
     method get_tile : int * int -> tile
     method is_occupied : int * int -> bool
     method issue_order : order -> unit
-    method map : (int * int, mapb) Hashtbl.t
     method my_ants : ant list
     method my_hills : ((int * int) * int) list
     method passable : int * int -> bool

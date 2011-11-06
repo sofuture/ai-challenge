@@ -61,8 +61,13 @@ type tgame_state = {
     food : (int * int) list;
     tmap: mapb array array; 
     go_time: float;
+    
     now_occupied : ((int * int), int) Hashtbl.t;
-    mmap : ((int * int), mapb) Hashtbl.t;
+    
+    mmy_ants : ((int * int), ant) Hashtbl.t;
+    mfood : ((int * int), mapb) Hashtbl.t;
+    mmy_hills : ((int * int), mapb) Hashtbl.t;
+    menemy_hills : ((int * int), mapb) Hashtbl.t;
 };;
 
 type dir = [ `N | `E | `S | `W | `Stop];;
@@ -104,6 +109,9 @@ let int_of_tile t =
     | `Ant -> 199
     | `Dead -> 299
     | `Hill -> 399;;
+
+let tile_of t seen row col =
+    { content = t; seen = seen; row = row; col = col };;
 
 let set_turn gstate v =
     { gstate with turn = v };;
@@ -147,13 +155,16 @@ let sscanf_cps fmt cont_ok cont_fail s =
         cont_fail s;;
 
 let add_food gstate row col =
-    gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (int_of_tile `Food)};
+    let f = int_of_tile `Food in
+    gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = f};
+    Hashtbl.add gstate.mfood (row, col) (tile_of f gstate.turn row col);
     {gstate with food = ((row, col) :: gstate.food)};;
 
 let remove_food gstate row col =
     if gstate.tmap.(row).(col).content = (int_of_tile `Food) then
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with 
             content = (int_of_tile `Land)};
+    Hashtbl.remove gstate.mfood (row, col);
     {gstate with food = (List.filter (fun p -> not (p = (row, col))) gstate.food)};;
 
 let add_water gstate row col =
@@ -185,8 +196,10 @@ let add_hill gstate row col owner =
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (300 + owner) };
         match owner with
         | 0 ->
+            Hashtbl.add gstate.mmy_hills (row, col) (tile_of (300 + owner) gstate.turn row col);
             { gstate with my_hills = (((row, col), owner) :: gstate.my_hills) }
         | n ->
+            Hashtbl.add gstate.menemy_hills (row, col) (tile_of (300 + owner) gstate.turn row col);
             { gstate with enemy_hills = (((row, col), owner) :: gstate.enemy_hills) }
     ) with _ -> gstate;;
 
@@ -196,6 +209,7 @@ let add_ant gstate row col owner =
         let new_ant = new ant row col owner `Freelancer in
         match owner with
         | 0 ->
+            Hashtbl.add gstate.mmy_ants (row, col) new_ant;
             {gstate with my_ants = (new_ant :: gstate.my_ants)}
         | n ->
             {gstate with enemy_ants = (new_ant :: gstate.enemy_ants)}
@@ -492,7 +506,6 @@ class swrap state =
         method remove_occupied loc = remove_occupied_location state loc
         method add_occupied loc = add_occupied_location state loc
         method reset_occupied = reset_occupied state
-        method map = state.mmap
     end;;
 
 (* Main game loop. Bots should define a main function taking a swrap for 
@@ -527,8 +540,13 @@ let loop engine =
         food = [];
         tmap = Array.make_matrix 1 1 proto_tile; 
         go_time = 0.0;
+
         now_occupied = Hashtbl.create 20; 
-        mmap = Hashtbl.create 200;
+
+        mmy_ants = Hashtbl.create 20;
+        mfood = Hashtbl.create 20;
+        mmy_hills = Hashtbl.create 10;
+        menemy_hills = Hashtbl.create 20;
     } in
 
     for count_row = 0 to (Array.length proto_gstate.tmap - 1) do
