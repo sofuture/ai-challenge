@@ -116,6 +116,10 @@ let int_of_tile t =
     | `Ant -> 199
     | `Dead -> 299
     | `Hill -> 399;;
+
+(* Is tile at loc visible this turn? *)
+let visible gstate (row, col) =
+    gstate.tmap.(row).(col).seen = gstate.turn;;
         
 let ht_to_key_list k v acc = k :: acc;;
 
@@ -196,6 +200,11 @@ let clear_gstate gs =
         for count_row = 0 to (Array.length gs.tmap - 1) do
             let test_row = gs.tmap.(count_row) in
             for count_col = 0 to (Array.length test_row - 1) do
+                if visible gs (count_row, count_col) then (
+                    Hashtbl.remove gs.mfood (count_row, count_col);
+                    Hashtbl.remove gs.mmy_hills (count_row, count_col);
+                    Hashtbl.remove gs.menemy_hills (count_row, count_col);
+                );
                 test_row.(count_col) <- clear_tile test_row.(count_col) count_row count_col
             done
         done;
@@ -353,15 +362,20 @@ let issue_order ((row, col), cdir) =
     Printf.printf "%s" os;;
 
 let move_ant gstate f_loc dir t_loc =
-    let fr, fc = f_loc in
     let tr, tc = t_loc in
-    ddebug (Printf.sprintf "ORDER (%d,%d) -> (%d,%d)\n" fr fc tr tc);
-    Hashtbl.iter (fun (r,c) v -> ddebug (Printf.sprintf "ant at %d,%d\n" r c); ()) gstate.mmy_ants;
+
+    (* move ant *)
     let a = Hashtbl.find gstate.mmy_ants f_loc in
     Hashtbl.remove gstate.mmy_ants f_loc;
-    Hashtbl.add gstate.mmy_ants t_loc {a with loc = t_loc; r = tr; c = tc };
+    Hashtbl.add gstate.mmy_ants t_loc { a with loc = t_loc; r = tr; c = tc };
+
+    (* eat food if there is some *)
+    Hashtbl.remove gstate.mfood t_loc;
+
+    (* occupied management, this can probably be deprecated *)
     remove_occupied_location gstate f_loc;
     add_occupied_location gstate t_loc;
+
     issue_order (f_loc, dir);;
 
 (* Print go, newline, and flush buffer *)
@@ -487,9 +501,6 @@ let rec update_vision my_ants gstate =
          paint_fov head gstate;
          update_vision tail gstate;;
 
-(* Is tile at loc visible this turn? *)
-let visible gstate (row, col) =
-    gstate.tmap.(row).(col).seen = gstate.turn;;
 
 (* Is tile at loc passable (not blocked by water or food)? *)
 let passable gstate (row, col) =

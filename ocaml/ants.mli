@@ -41,6 +41,7 @@ val tile_of_int :
 val string_of_dir : [< `E | `N | `S | `Stop | `W ] -> string
 val int_of_tile :
   [< `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ] -> int
+val visible : tgame_state -> int * int -> bool
 val ht_to_key_list : 'a -> 'b -> 'a list -> 'a list
 val ht_to_val_list : 'a -> 'b -> 'b list -> 'b list
 val tile_of : int -> int -> int -> int -> mapb
@@ -104,7 +105,6 @@ val distance_and_direction :
 val mark_seen : int -> int * int -> mapb array array -> unit
 val paint_fov : ant -> tgame_state -> unit
 val update_vision : ant list -> tgame_state -> unit
-val visible : tgame_state -> int * int -> bool
 val passable : tgame_state -> int * int -> bool
 val centre : tgame_state -> int * int
 val time_remaining : tgame_state -> float
