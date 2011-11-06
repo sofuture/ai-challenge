@@ -119,9 +119,9 @@ let get_type_tiles state ttype =
     | `Food -> 
             (* (int * int) list *)
             state#get_food
-    | `Ant -> 
+    | `Ant -> []
             (* Ants.ant list -> (int * int) list*)
-            List.map (fun x -> x.loc) state#enemy_ants
+(*            List.map (fun x -> x.loc) state#enemy_ants*)
     | `Dead -> []
     | `Hill -> 
             (* ((int * int) * int) *)

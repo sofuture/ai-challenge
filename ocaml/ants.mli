@@ -18,19 +18,14 @@ type ant = { role : role; loc : int * int; r : int; c : int; owner : int; }
 type tgame_state = {
   setup : game_setup;
   turn : int;
-  my_ants : ant list;
-  enemy_ants : ant list;
-  my_hills : ((int * int) * int) list;
-  enemy_hills : ((int * int) * int) list;
-  dead_ants : ant list;
-  food : (int * int) list;
   tmap : mapb array array;
   go_time : float;
   now_occupied : (int * int, int) Hashtbl.t;
-  mmy_ants : (int * int, ant) Hashtbl.t;
-  mfood : (int * int, mapb) Hashtbl.t;
-  mmy_hills : (int * int, (int * int) * int) Hashtbl.t;
-  menemy_hills : (int * int, (int * int) * int) Hashtbl.t;
+  my_ants : (int * int, ant) Hashtbl.t;
+  food : (int * int, mapb) Hashtbl.t;
+  my_hills : (int * int, (int * int) * int) Hashtbl.t;
+  enemy_hills : (int * int, (int * int) * int) Hashtbl.t;
+  enemy_ants : ((int * int) * int) list;
 }
 type dir = [ `E | `N | `S | `Stop | `W ]
 type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
@@ -70,7 +65,6 @@ val reset_occupied : tgame_state -> unit
 val remove_occupied_location : tgame_state -> int * int -> unit
 val add_occupied_location : tgame_state -> int * int -> unit
 val is_occupied_location : tgame_state -> int * int -> bool
-val add_dead_ant : tgame_state -> int -> int -> int -> tgame_state
 val initialize_map : tgame_state -> tgame_state
 val add_line : tgame_state -> string -> tgame_state
 val update : tgame_state -> string list -> tgame_state
@@ -120,7 +114,6 @@ class swrap :
     method distance2 : int * int -> int * int -> int
     method distance_and_direction :
       int * int -> int * int -> (dir * dir) * float
-    method enemy_ants : ant list
     method enemy_hills : ((int * int) * int) list
     method finish_turn : unit -> unit
     method get_food : (int * int) list

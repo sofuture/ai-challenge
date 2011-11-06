@@ -47,34 +47,17 @@ type ant  =
       c : int;
       owner : int; };;
 
-(*class ant ~row ~col ~owner ~(role:role) = object
-    method role = role 
-    method loc = row, col
-    method row = row
-    method col = col
-    method owner = owner
-    method to_string =
-        Printf.sprintf "Ant at %d, %d belongs to player %d" row col owner;
-end;;*)
-
 type tgame_state = {
     setup : game_setup;
     turn : int;
-    my_ants : ant list;
-    enemy_ants : ant list;
-    my_hills : ((int * int) * int) list;
-    enemy_hills : ((int * int) * int) list;
-    dead_ants : ant list;
-    food : (int * int) list;
     tmap: mapb array array; 
     go_time: float;
-    
     now_occupied : ((int * int), int) Hashtbl.t;
-    
-    mmy_ants : ((int * int), ant) Hashtbl.t;
-    mfood : ((int * int), mapb) Hashtbl.t;
-    mmy_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
-    menemy_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
+    my_ants : ((int * int), ant) Hashtbl.t;
+    food : ((int * int), mapb) Hashtbl.t;
+    my_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
+    enemy_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
+    enemy_ants : ((int * int) * int) list;
 };;
 
 type dir = [ `N | `E | `S | `W | `Stop];;
@@ -172,15 +155,15 @@ let sscanf_cps fmt cont_ok cont_fail s =
 let add_food gstate row col =
     let f = int_of_tile `Food in
     gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = f};
-    Hashtbl.add gstate.mfood (row, col) (tile_of f gstate.turn row col);
+    Hashtbl.add gstate.food (row, col) (tile_of f gstate.turn row col);
     gstate;;
 
 let remove_food gstate row col =
     if gstate.tmap.(row).(col).content = (int_of_tile `Food) then
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with 
             content = (int_of_tile `Land)};
-    Hashtbl.remove gstate.mfood (row, col);
-    {gstate with food = (List.filter (fun p -> not (p = (row, col))) gstate.food)};;
+    Hashtbl.remove gstate.food (row, col);
+    gstate;;
 
 let add_water gstate row col =
     gstate.tmap.(row).(col) <- {gstate.tmap.(row).(col) with content = (int_of_tile `Water)};
@@ -193,7 +176,6 @@ let clear_tile t row col =
         {t with content = (int_of_tile `Land); row = row; col = col};;
 
 let clear_gstate gs =
-    ddebug "CLEARING DEBUG STATE";
     if gs.turn < 1 then 
         gs 
     else (
@@ -201,52 +183,44 @@ let clear_gstate gs =
             let test_row = gs.tmap.(count_row) in
             for count_col = 0 to (Array.length test_row - 1) do
                 if visible gs (count_row, count_col) then (
-                    Hashtbl.remove gs.mfood (count_row, count_col);
-                    Hashtbl.remove gs.mmy_hills (count_row, count_col);
-                    Hashtbl.remove gs.menemy_hills (count_row, count_col);
+                    Hashtbl.remove gs.food (count_row, count_col);
+                    Hashtbl.remove gs.my_hills (count_row, count_col);
+                    Hashtbl.remove gs.enemy_hills (count_row, count_col);
                 );
                 test_row.(count_col) <- clear_tile test_row.(count_col) count_row count_col
             done
         done;
-        { gs with
-        enemy_ants = []; dead_ants = []; 
-        my_ants = Hashtbl.fold ht_to_val_list gs.mmy_ants [];
-        food = Hashtbl.fold ht_to_key_list gs.mfood [];
-        my_hills = Hashtbl.fold ht_to_val_list gs.mmy_hills [];
-        enemy_hills = Hashtbl.fold ht_to_val_list gs.menemy_hills [] } );;
+        gs);;
 
 let add_hill gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (300 + owner) };
         match owner with
         | 0 ->
-            Hashtbl.add gstate.mmy_hills (row, col) ((row, col), owner);
+            Hashtbl.add gstate.my_hills (row, col) ((row, col), owner);
             gstate
         | n ->
-            Hashtbl.add gstate.menemy_hills (row, col) ((row, col), owner);
+            Hashtbl.add gstate.enemy_hills (row, col) ((row, col), owner);
             gstate
     ) with _ -> gstate;;
 
 let add_ant gstate row col owner =
     try (
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (100 + owner) };
-        (*let new_ant = new ant row col owner `Freelancer in*)
-        let new_ant = { r = row; c = col; role = `Freelancer; loc = (row, col);
-        owner = owner} in
+        let new_ant = { r = row; c = col; role = `Freelancer; loc = (row, col); owner = owner} in
         match owner with
         | 0 ->
-            ddebug (Printf.sprintf "i think there is an ant at %d,%d\n" row col);
-            Hashtbl.remove gstate.mmy_ants (row, col);
-            Hashtbl.add gstate.mmy_ants (row, col) new_ant;
+            Hashtbl.remove gstate.my_ants (row, col);
+            Hashtbl.add gstate.my_ants (row, col) new_ant;
             gstate
         | n ->
-            gstate
+            {gstate with enemy_ants = ((row, col), owner) :: gstate.enemy_ants}
     ) with _ -> gstate;;
 
 let reset_occupied gstate =
     Hashtbl.clear gstate.now_occupied;
-    let insert_loc mant = Hashtbl.add gstate.now_occupied mant.loc 0; () in
-    let _ = List.map insert_loc gstate.my_ants in 
+    let insert_loc k v = Hashtbl.add gstate.now_occupied v.loc 0; () in
+    let _ = Hashtbl.iter insert_loc gstate.my_ants in 
     ();;
 
 let remove_occupied_location gstate loc = 
@@ -265,13 +239,6 @@ let is_occupied_location gstate loc =
     ) with _ -> false;;
 
 
-let add_dead_ant gstate row col owner =
-    try (
-        gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (200 + owner) };
-        let new_ant = { r = row; c = col; loc = (row,col); owner = owner; role = `Dead} in
-        { gstate with dead_ants = (new_ant :: gstate.dead_ants) }
-    ) with _ -> gstate;;
-
 let initialize_map gstate =
     let new_map = Array.make_matrix gstate.setup.rows gstate.setup.cols proto_tile in
     for count_row = 0 to (Array.length new_map - 1) do
@@ -287,7 +254,7 @@ let add_line gstate line =
         (fun ad row col owner ->
             match ad with
             | "a" -> add_ant gstate row col owner
-            | "d" -> add_dead_ant gstate row col owner
+(*            | "d" -> add_dead_ant gstate row col owner*)
             | "h" -> add_hill gstate row col owner
             | bd -> gstate)
         (sscanf_cps "%s %d %d"
@@ -365,12 +332,12 @@ let move_ant gstate f_loc dir t_loc =
     let tr, tc = t_loc in
 
     (* move ant *)
-    let a = Hashtbl.find gstate.mmy_ants f_loc in
-    Hashtbl.remove gstate.mmy_ants f_loc;
-    Hashtbl.add gstate.mmy_ants t_loc { a with loc = t_loc; r = tr; c = tc };
+    let a = Hashtbl.find gstate.my_ants f_loc in
+    Hashtbl.remove gstate.my_ants f_loc;
+    Hashtbl.add gstate.my_ants t_loc { a with loc = t_loc; r = tr; c = tc };
 
     (* eat food if there is some *)
-    Hashtbl.remove gstate.mfood t_loc;
+    Hashtbl.remove gstate.food t_loc;
 
     (* occupied management, this can probably be deprecated *)
     remove_occupied_location gstate f_loc;
@@ -530,8 +497,10 @@ class swrap state =
         method get_tile loc = ((get_tile state.tmap loc): tile)
         method distance2 p1 p2 = distance2 self#bounds p1 p2
         method distance p1 p2 = distance self#bounds p1 p2
-        method distance_and_direction p1 p2 = ((distance_and_direction self#bounds p1 p2): ((dir * dir) * float))
-        method update_vision = update_vision state.my_ants state
+        method distance_and_direction p1 p2 = 
+            ((distance_and_direction self#bounds p1 p2): ((dir * dir) * float))
+        method update_vision = 
+            update_vision (Hashtbl.fold ht_to_val_list state.my_ants []) state
         method visible loc = visible state loc
         method passable loc = passable state loc
         method centre = centre state
@@ -539,18 +508,19 @@ class swrap state =
         method set_state s = state <- s
         method get_state = state
         method turn = state.turn
-        method my_ants = state.my_ants
-        method enemy_ants = state.enemy_ants
-        method my_hills = state.my_hills
-        method enemy_hills = state.enemy_hills
         method get_map = state.tmap
         method get_player_seed = state.setup.player_seed
-        method get_food = state.food
         method is_occupied loc = is_occupied_location state loc
         method remove_occupied loc = remove_occupied_location state loc
         method add_occupied loc = add_occupied_location state loc
         method reset_occupied = reset_occupied state
         method move_ant loc1 (d:dir) loc2 = move_ant state loc1 d loc2
+
+        (* memoize this bitch per turn *)
+        method my_ants = Hashtbl.fold ht_to_val_list state.my_ants []
+        method get_food = Hashtbl.fold ht_to_key_list state.food []
+        method my_hills = Hashtbl.fold ht_to_val_list state.my_hills []
+        method enemy_hills = Hashtbl.fold ht_to_val_list state.enemy_hills []
     end;;
 
 (* Main game loop. Bots should define a main function taking a swrap for 
@@ -577,21 +547,14 @@ let loop engine =
     let proto_gstate = {
         setup = proto_setup;
         turn = 0;
-        my_ants = [];
-        enemy_ants = [];
-        my_hills = [];
-        enemy_hills = [];
-        dead_ants = [];
-        food = [];
         tmap = Array.make_matrix 1 1 proto_tile; 
         go_time = 0.0;
-
+        enemy_ants = [];
         now_occupied = Hashtbl.create 20; 
-
-        mmy_ants = Hashtbl.create 20;
-        mfood = Hashtbl.create 20;
-        mmy_hills = Hashtbl.create 10;
-        menemy_hills = Hashtbl.create 20;
+        my_ants = Hashtbl.create 20;
+        food = Hashtbl.create 20;
+        my_hills = Hashtbl.create 10;
+        enemy_hills = Hashtbl.create 20;
     } in
 
     for count_row = 0 to (Array.length proto_gstate.tmap - 1) do
@@ -602,18 +565,19 @@ let loop engine =
     done;
 
     let wrap = new swrap proto_gstate in
-    let rec take_turn i gstate = match read gstate with 
-    | Some state ->
-        begin try (
-            wrap#set_state state;
-            engine wrap;
-            flush Pervasives.stdout;
-        ) with exc -> (
-            ddebug (Printf.sprintf 
-            "Exception in turn %d :\n" i);
-            ddebug (Printexc.to_string exc);
-            raise exc
-        ) end;
-        take_turn (i + 1) wrap#get_state
-    | None -> () in 
+    let rec take_turn i gstate = 
+        match read gstate with 
+        | Some state ->
+            begin try (
+                wrap#set_state state;
+                engine wrap;
+                flush Pervasives.stdout;
+            ) with exc -> (
+                ddebug (Printf.sprintf 
+                "Exception in turn %d :\n" i);
+                ddebug (Printexc.to_string exc);
+                raise exc
+            ) end;
+            take_turn (i + 1) wrap#get_state
+        | None -> () in 
     take_turn 0 proto_gstate;;
