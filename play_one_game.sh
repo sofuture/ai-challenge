@@ -10,6 +10,7 @@ sh build.sh
 --log_dir tools/game_logs \
 --turntime=300 \
 --turns 200 \
+--strict \
 --map_file tools/maps/random_walk_08p_02.map \
 "./ocaml/MyBot.native" \
 "python tools/sample_bots/python/LeftyBot.py" \

@@ -192,7 +192,6 @@ let find_best_move_for_ant state ant =
         let g = match ant.goal with
         | None -> (0,0)
         | Some c -> c in
-        (* this isn't quite right *)
         (Some ant, 0.0, Some `Goal, g);;
 
 (* --------- *)

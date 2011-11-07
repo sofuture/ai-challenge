@@ -247,7 +247,11 @@ let add_ant gstate row col owner =
         | 0 ->
             (*Hashtbl.remove gstate.my_ants (row, col);*)
             if not (Hashtbl.mem gstate.my_ants loc) then
-                Hashtbl.add gstate.my_ants loc new_ant;
+                Hashtbl.add gstate.my_ants loc new_ant
+            else  (
+                let old_ant = Hashtbl.find gstate.my_ants loc in
+                Hashtbl.replace gstate.my_ants loc {old_ant with lseen = gstate.turn}
+            );
             gstate
         | n ->
             {gstate with enemy_ants = ((row, col), owner) :: gstate.enemy_ants}
@@ -519,6 +523,16 @@ let time_remaining state =
              (float_of_int state.setup.turntime) in
       1000. *. ((turn_time /. 1000.) -. ((get_time ()) -. state.go_time));;
 
+let remove_dead_ants gstate =
+    let turn = gstate.turn in
+    let inner k v acc =
+        if v.lseen = turn then acc
+        else k::acc in
+    let dead_keys = Hashtbl.fold inner gstate.my_ants [] in
+    let rem k =
+        Hashtbl.remove gstate.my_ants k in
+    List.iter rem dead_keys
+
 class swrap state =
     object (self)
     val mutable state = state
@@ -587,11 +601,12 @@ class swrap state =
             )
 
         method invalidate_caches =
+            remove_dead_ants state;
             state <- {state with
                 cache_my_ants = (false, []);
                 cache_food = (false, []);
                 cache_my_hills = (false, []);
-                cache_enemy_hills = (false, [])}
+                cache_enemy_hills = (false, []);}
 
     end;;
 

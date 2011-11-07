@@ -118,6 +118,7 @@ val update_vision : ant list -> tgame_state -> unit
 val passable : tgame_state -> int * int -> bool
 val centre : tgame_state -> int * int
 val time_remaining : tgame_state -> float
+val remove_dead_ants : tgame_state -> unit
 class swrap :
   tgame_state ->
   object
