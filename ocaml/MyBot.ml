@@ -49,8 +49,6 @@ type 'a option =
     | None
     | Some of 'a;;
 
-type location = int * int;;
-
 type order = ant * dir;;
 
 type hill_guards = location * ant list;;
@@ -59,8 +57,7 @@ type survey = ant option * float * tile option * location;;
 
 (* helpers for initializing types *)
 
-let dummy_survey = 
-    (None, 1000., None, (0,0));;
+let dummy_survey = (None, 1000., None, (0,0));;
 
 (* ------------- *)
 (* general utils *)
@@ -113,19 +110,20 @@ let get_tile_list state =
     Array.fold_left for_rows [] state#get_map;;
 
 let get_type_tiles state ttype =
+    let loc_of_loc_extra (l,o) = l in
     match ttype with 
     | `Water -> []
     | `Land -> []
     | `Food -> 
             (* (int * int) list *)
             state#get_food
-    | `Ant -> []
-            (* Ants.ant list -> (int * int) list*)
-(*            List.map (fun x -> x.loc) state#enemy_ants*)
+    | `Ant -> 
+            (* ((int * int) * int) list *)
+            List.map loc_of_loc_extra state#enemy_ants
     | `Dead -> []
     | `Hill -> 
             (* ((int * int) * int) *)
-            List.map (fun ((r,c),o) -> (r,c)) state#enemy_hills
+            List.map loc_of_loc_extra state#enemy_hills
     | `Unseen -> [];;
 
 let find_n_closest_ants state ants loc n =

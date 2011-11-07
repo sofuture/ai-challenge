@@ -1,6 +1,9 @@
 val out_chan : out_channel
 val get_time : unit -> float
 val ddebug : string -> unit
+type role = [ `Dead | `Explorer | `Freelancer | `Guard | `Warrior ]
+type dir = [ `E | `N | `S | `Stop | `W ]
+type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
 type game_setup = {
   loadtime : int;
   turntime : int;
@@ -13,23 +16,22 @@ type game_setup = {
   player_seed : int;
 }
 type mapb = { content : int; seen : int; row : int; col : int; }
-type role = [ `Dead | `Explorer | `Freelancer | `Guard | `Warrior ]
-type ant = { role : role; loc : int * int; r : int; c : int; owner : int; }
+type location = int * int
+type loc_extra = location * int
+type ant = { role : role; loc : location; r : int; c : int; owner : int; }
+type order = location * dir
 type tgame_state = {
   setup : game_setup;
   turn : int;
   tmap : mapb array array;
   go_time : float;
-  now_occupied : (int * int, int) Hashtbl.t;
-  my_ants : (int * int, ant) Hashtbl.t;
-  food : (int * int, mapb) Hashtbl.t;
-  my_hills : (int * int, (int * int) * int) Hashtbl.t;
-  enemy_hills : (int * int, (int * int) * int) Hashtbl.t;
-  enemy_ants : ((int * int) * int) list;
+  now_occupied : (location, int) Hashtbl.t;
+  my_ants : (location, ant) Hashtbl.t;
+  food : (location, mapb) Hashtbl.t;
+  my_hills : (location, loc_extra) Hashtbl.t;
+  enemy_hills : (location, loc_extra) Hashtbl.t;
+  enemy_ants : loc_extra list;
 }
-type dir = [ `E | `N | `S | `Stop | `W ]
-type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
-type order = (int * int) * dir
 val proto_tile : mapb
 val tile_of_int :
   int -> [> `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
@@ -62,9 +64,9 @@ val clear_gstate : tgame_state -> tgame_state
 val add_hill : tgame_state -> int -> int -> int -> tgame_state
 val add_ant : tgame_state -> int -> int -> int -> tgame_state
 val reset_occupied : tgame_state -> unit
-val remove_occupied_location : tgame_state -> int * int -> unit
-val add_occupied_location : tgame_state -> int * int -> unit
-val is_occupied_location : tgame_state -> int * int -> bool
+val remove_occupied_location : tgame_state -> location -> unit
+val add_occupied_location : tgame_state -> location -> unit
+val is_occupied_location : tgame_state -> location -> bool
 val initialize_map : tgame_state -> tgame_state
 val add_line : tgame_state -> string -> tgame_state
 val update : tgame_state -> string list -> tgame_state
@@ -73,7 +75,7 @@ val read : tgame_state -> tgame_state option
 val issue_order : (int * int) * [< `E | `N | `S | `Stop | `W ] -> unit
 val move_ant :
   tgame_state ->
-  int * int -> [< `E | `N | `S | `Stop | `W ] -> int * int -> unit
+  location -> [< `E | `N | `S | `Stop | `W ] -> location -> unit
 val finish_turn : unit -> unit
 val step_unbound : [< `E | `N | `S | `Stop | `W ] -> int * int -> int * int
 val wrap0 : int -> int -> int
@@ -106,7 +108,7 @@ class swrap :
   tgame_state ->
   object
     val mutable state : tgame_state
-    method add_occupied : int * int -> unit
+    method add_occupied : location -> unit
     method bounds : int * int
     method centre : int * int
     method direction : int * int -> int * int -> dir * dir
@@ -114,20 +116,21 @@ class swrap :
     method distance2 : int * int -> int * int -> int
     method distance_and_direction :
       int * int -> int * int -> (dir * dir) * float
-    method enemy_hills : ((int * int) * int) list
+    method enemy_ants : loc_extra list
+    method enemy_hills : loc_extra list
     method finish_turn : unit -> unit
-    method get_food : (int * int) list
+    method get_food : location list
     method get_map : mapb array array
     method get_player_seed : int
     method get_state : tgame_state
     method get_tile : int * int -> tile
-    method is_occupied : int * int -> bool
+    method is_occupied : location -> bool
     method issue_order : order -> unit
-    method move_ant : int * int -> dir -> int * int -> unit
+    method move_ant : location -> dir -> location -> unit
     method my_ants : ant list
-    method my_hills : ((int * int) * int) list
+    method my_hills : loc_extra list
     method passable : int * int -> bool
-    method remove_occupied : int * int -> unit
+    method remove_occupied : location -> unit
     method reset_occupied : unit
     method set_state : tgame_state -> unit
     method step_dir : int * int -> dir -> int * int

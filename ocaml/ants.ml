@@ -8,6 +8,10 @@ open Unix;;
 
 open Hashtbl;;
 
+(* ----------------------- *)
+(* debugging utility stuff *)
+(* ----------------------- *)
+
 let out_chan = open_out "mybot_err.log";;
 
 let get_time () = Unix.gettimeofday ();;
@@ -18,6 +22,16 @@ let ddebug s =
         output_string out_chan s; 
         flush out_chan
     ) else ();;
+
+(* --------------- *)
+(* types and enums *)
+(* --------------- *)
+
+type role = [`Freelancer | `Guard | `Explorer | `Warrior | `Dead];;
+
+type dir = [`N | `E | `S | `W | `Stop];;
+
+type tile = [`Water | `Land | `Food | `Ant | `Dead | `Hill | `Unseen];;
 
 type game_setup = {
     loadtime : int;
@@ -38,33 +52,32 @@ type mapb = {
     col : int;
 };;
 
-type role = [`Freelancer | `Guard | `Explorer | `Warrior | `Dead];;
+type location = int * int;;
 
-type ant  =
-    { role : role;
-      loc : int * int;
-      r : int;
-      c : int;
-      owner : int; };;
+type loc_extra = location * int;;
+
+type ant = { 
+    role : role;
+    loc : location;
+    r : int;
+    c : int;
+    owner : int; 
+};;
+
+type order = location * dir;;
 
 type tgame_state = {
     setup : game_setup;
     turn : int;
     tmap: mapb array array; 
     go_time: float;
-    now_occupied : ((int * int), int) Hashtbl.t;
-    my_ants : ((int * int), ant) Hashtbl.t;
-    food : ((int * int), mapb) Hashtbl.t;
-    my_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
-    enemy_hills : ((int * int), ((int * int) * int)) Hashtbl.t;
-    enemy_ants : ((int * int) * int) list;
+    now_occupied : (location, int) Hashtbl.t;
+    my_ants : (location, ant) Hashtbl.t;
+    food : (location, mapb) Hashtbl.t;
+    my_hills : (location, loc_extra) Hashtbl.t;
+    enemy_hills : (location, loc_extra) Hashtbl.t;
+    enemy_ants : loc_extra list;
 };;
-
-type dir = [ `N | `E | `S | `W | `Stop];;
-
-type tile = [ `Water | `Land | `Food | `Ant | `Dead | `Hill | `Unseen];;
-
-type order = ((int * int) * dir);;
 
 let proto_tile = {
     content = 0;
@@ -190,7 +203,7 @@ let clear_gstate gs =
                 test_row.(count_col) <- clear_tile test_row.(count_col) count_row count_col
             done
         done;
-        gs);;
+        {gs with enemy_ants = []});;
 
 let add_hill gstate row col owner =
     try (
@@ -514,12 +527,14 @@ class swrap state =
         method add_occupied loc = add_occupied_location state loc
         method reset_occupied = reset_occupied state
         method move_ant loc1 (d:dir) loc2 = move_ant state loc1 d loc2
+        method enemy_ants = state.enemy_ants
 
         (* memoize this bitch per turn *)
         method my_ants = Hashtbl.fold ht_to_val_list state.my_ants []
         method get_food = Hashtbl.fold ht_to_key_list state.food []
         method my_hills = Hashtbl.fold ht_to_val_list state.my_hills []
         method enemy_hills = Hashtbl.fold ht_to_val_list state.enemy_hills []
+
     end;;
 
 (* Main game loop. Bots should define a main function taking a swrap for 

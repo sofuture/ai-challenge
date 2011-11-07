@@ -7,7 +7,6 @@ clean : clean-submission
 	rm -rf ocaml/_build
 	rm -f ocaml/MyBot.debug
 	rm -f ocaml/MyBot.native
-	rm -f ocaml/*.mli
 
 run :
 	sh run.sh
