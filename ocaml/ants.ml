@@ -238,7 +238,6 @@ let is_occupied_location gstate loc =
         Hashtbl.mem gstate.now_occupied loc
     ) with _ -> false;;
 
-
 let initialize_map gstate =
     let new_map = Array.make_matrix gstate.setup.rows gstate.setup.cols proto_tile in
     for count_row = 0 to (Array.length new_map - 1) do
