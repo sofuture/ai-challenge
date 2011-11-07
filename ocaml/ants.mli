@@ -2,6 +2,7 @@ val out_chan : out_channel
 val get_time : unit -> float
 val ddebug : string -> unit
 type 'a option = None | Some of 'a
+type 'a cache = Invalid | Valid of 'a
 type role = [ `Dead | `Explorer | `Freelancer | `Guard | `Warrior ]
 type dir = [ `E | `N | `S | `Stop | `W ]
 type tile =
@@ -39,10 +40,10 @@ type tgame_state = {
   my_hills : (location, loc_extra) Hashtbl.t;
   enemy_hills : (location, loc_extra) Hashtbl.t;
   enemy_ants : loc_extra list;
-  cache_my_ants : bool * ant list;
-  cache_food : bool * location list;
-  cache_my_hills : bool * loc_extra list;
-  cache_enemy_hills : bool * loc_extra list;
+  cache_my_ants : ant list cache;
+  cache_food : location list cache;
+  cache_my_hills : loc_extra list cache;
+  cache_enemy_hills : loc_extra list cache;
 }
 val proto_tile : mapb
 val tile_of_int :

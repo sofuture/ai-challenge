@@ -31,6 +31,10 @@ type 'a option =
     | None
     | Some of 'a;;
 
+type 'a cache = 
+    | Invalid
+    | Valid of 'a;;
+
 type role = [`Freelancer | `Guard | `Explorer | `Warrior | `Dead];;
 
 type dir = [`N | `E | `S | `W | `Stop];;
@@ -81,10 +85,10 @@ type tgame_state = {
     my_hills : (location, loc_extra) Hashtbl.t;
     enemy_hills : (location, loc_extra) Hashtbl.t;
     enemy_ants : loc_extra list;
-    cache_my_ants : bool * (ant list);
-    cache_food : bool * (location list);
-    cache_my_hills : bool * (loc_extra list);
-    cache_enemy_hills : bool * (loc_extra list);
+    cache_my_ants : ant list cache;
+    cache_food : location list cache;
+    cache_my_hills : loc_extra list cache;
+    cache_enemy_hills : loc_extra list cache;
 };;
 
 let proto_tile = {
@@ -565,48 +569,44 @@ class swrap state =
         method enemy_ants = state.enemy_ants
 
         method my_ants = 
-            let (v,c) = state.cache_my_ants in 
-            if v then c
-            else (
+            match state.cache_my_ants with
+            | Valid c -> c
+            | Invalid ->
                 let nc = Hashtbl.fold ht_to_val_list state.my_ants [] in
-                state <- {state with cache_my_ants = (true, nc)};
+                state <- {state with cache_my_ants = Valid nc};
                 nc
-            )
 
-        method get_food = 
-            let (v,c) = state.cache_food in
-            if v then c
-            else (
+        method get_food =
+            match state.cache_food with
+            | Valid c -> c
+            | Invalid ->
                 let nc = Hashtbl.fold ht_to_key_list state.food [] in
-                state <- {state with cache_food = (true, nc)};
+                state <- {state with cache_food = Valid nc};
                 nc
-            )
 
         method my_hills = 
-            let (v,c) = state.cache_my_hills in
-            if v then c
-            else (
+            match state.cache_my_hills with
+            | Valid c -> c
+            | Invalid ->
                 let nc = Hashtbl.fold ht_to_val_list state.my_hills [] in
-                state <- {state with cache_my_hills = (true, nc)};
+                state <- {state with cache_my_hills = Valid nc};
                 nc
-            )
 
-        method enemy_hills = 
-            let (v,c) = state.cache_enemy_hills in
-            if v then c
-            else (
+        method enemy_hills =
+            match state.cache_enemy_hills with
+            | Valid c -> c
+            | Invalid ->
                 let nc = Hashtbl.fold ht_to_val_list state.enemy_hills [] in
-                state <- {state with cache_enemy_hills = (true, nc)};
+                state <- {state with cache_enemy_hills = Valid nc};
                 nc
-            )
 
         method invalidate_caches =
             remove_dead_ants state;
             state <- {state with
-                cache_my_ants = (false, []);
-                cache_food = (false, []);
-                cache_my_hills = (false, []);
-                cache_enemy_hills = (false, []);}
+                cache_my_ants = Invalid;
+                cache_food = Invalid;
+                cache_my_hills = Invalid;
+                cache_enemy_hills = Invalid;}
 
     end;;
 
@@ -643,10 +643,10 @@ let loop engine =
         my_hills = Hashtbl.create 10;
         enemy_hills = Hashtbl.create 20;
 
-        cache_my_ants = (false, []);
-        cache_food = (false, []);
-        cache_my_hills = (false, []);
-        cache_enemy_hills = (false, []);
+        cache_my_ants = Invalid;
+        cache_food = Invalid;
+        cache_my_hills = Invalid;
+        cache_enemy_hills = Invalid;
     } in
 
     for count_row = 0 to (Array.length proto_gstate.tmap - 1) do
