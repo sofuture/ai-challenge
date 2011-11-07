@@ -27,11 +27,15 @@ let ddebug s =
 (* types and enums *)
 (* --------------- *)
 
+type 'a option =
+    | None
+    | Some of 'a;;
+
 type role = [`Freelancer | `Guard | `Explorer | `Warrior | `Dead];;
 
 type dir = [`N | `E | `S | `W | `Stop];;
 
-type tile = [`Water | `Land | `Food | `Ant | `Dead | `Hill | `Unseen];;
+type tile = [`Water | `Land | `Food | `Ant | `Dead | `Hill | `Unseen | `Goal];;
 
 type game_setup = {
     loadtime : int;
@@ -59,9 +63,9 @@ type loc_extra = location * int;;
 type ant = { 
     role : role;
     loc : location;
-    r : int;
-    c : int;
-    owner : int; 
+    owner : int;
+    goal : location option;
+    lseen : int;
 };;
 
 type order = location * dir;;
@@ -77,6 +81,10 @@ type tgame_state = {
     my_hills : (location, loc_extra) Hashtbl.t;
     enemy_hills : (location, loc_extra) Hashtbl.t;
     enemy_ants : loc_extra list;
+    cache_my_ants : bool * (ant list);
+    cache_food : bool * (location list);
+    cache_my_hills : bool * (loc_extra list);
+    cache_enemy_hills : bool * (loc_extra list);
 };;
 
 let proto_tile = {
@@ -93,6 +101,7 @@ let tile_of_int c =
     else if c = 3 then `Food
     else if (c > 99) && (c < 200) then `Ant
     else if (c > 299) && (c < 400) then `Hill
+    else if c = 1000 then `Goal
     else `Dead;;
 
 let string_of_dir d = 
@@ -110,8 +119,14 @@ let int_of_tile t =
     | `Water -> 2
     | `Food -> 3
     | `Ant -> 199
-    | `Dead -> 299
-    | `Hill -> 399;;
+    | `Dead -> 999
+    | `Hill -> 399
+    | `Goal -> 1000
+
+let random_location state = 
+    let r = Random.int (Array.length state.tmap) in
+    let c = Random.int (Array.length state.tmap.(0)) in
+    (r,c);;
 
 (* Is tile at loc visible this turn? *)
 let visible gstate (row, col) =
@@ -219,12 +234,20 @@ let add_hill gstate row col owner =
 
 let add_ant gstate row col owner =
     try (
+        let loc = (row, col) in
         gstate.tmap.(row).(col) <- { gstate.tmap.(row).(col) with content = (100 + owner) };
-        let new_ant = { r = row; c = col; role = `Freelancer; loc = (row, col); owner = owner} in
+        let goal = random_location gstate in
+        let new_ant = {
+            lseen = gstate.turn;
+            role = `Freelancer; 
+            loc = loc; 
+            owner = owner; 
+            goal = Some goal } in
         match owner with
         | 0 ->
-            Hashtbl.remove gstate.my_ants (row, col);
-            Hashtbl.add gstate.my_ants (row, col) new_ant;
+            (*Hashtbl.remove gstate.my_ants (row, col);*)
+            if not (Hashtbl.mem gstate.my_ants loc) then
+                Hashtbl.add gstate.my_ants loc new_ant;
             gstate
         | n ->
             {gstate with enemy_ants = ((row, col), owner) :: gstate.enemy_ants}
@@ -341,12 +364,10 @@ let issue_order ((row, col), cdir) =
     Printf.printf "%s" os;;
 
 let move_ant gstate f_loc dir t_loc =
-    let tr, tc = t_loc in
-
     (* move ant *)
     let a = Hashtbl.find gstate.my_ants f_loc in
     Hashtbl.remove gstate.my_ants f_loc;
-    Hashtbl.add gstate.my_ants t_loc { a with loc = t_loc; r = tr; c = tc };
+    Hashtbl.add gstate.my_ants t_loc { a with loc = t_loc; };
 
     (* eat food if there is some *)
     Hashtbl.remove gstate.food t_loc;
@@ -529,11 +550,48 @@ class swrap state =
         method move_ant loc1 (d:dir) loc2 = move_ant state loc1 d loc2
         method enemy_ants = state.enemy_ants
 
-        (* memoize this bitch per turn *)
-        method my_ants = Hashtbl.fold ht_to_val_list state.my_ants []
-        method get_food = Hashtbl.fold ht_to_key_list state.food []
-        method my_hills = Hashtbl.fold ht_to_val_list state.my_hills []
-        method enemy_hills = Hashtbl.fold ht_to_val_list state.enemy_hills []
+        method my_ants = 
+            let (v,c) = state.cache_my_ants in 
+            if v then c
+            else (
+                let nc = Hashtbl.fold ht_to_val_list state.my_ants [] in
+                state <- {state with cache_my_ants = (true, nc)};
+                nc
+            )
+
+        method get_food = 
+            let (v,c) = state.cache_food in
+            if v then c
+            else (
+                let nc = Hashtbl.fold ht_to_key_list state.food [] in
+                state <- {state with cache_food = (true, nc)};
+                nc
+            )
+
+        method my_hills = 
+            let (v,c) = state.cache_my_hills in
+            if v then c
+            else (
+                let nc = Hashtbl.fold ht_to_val_list state.my_hills [] in
+                state <- {state with cache_my_hills = (true, nc)};
+                nc
+            )
+
+        method enemy_hills = 
+            let (v,c) = state.cache_enemy_hills in
+            if v then c
+            else (
+                let nc = Hashtbl.fold ht_to_val_list state.enemy_hills [] in
+                state <- {state with cache_enemy_hills = (true, nc)};
+                nc
+            )
+
+        method invalidate_caches =
+            state <- {state with
+                cache_my_ants = (false, []);
+                cache_food = (false, []);
+                cache_my_hills = (false, []);
+                cache_enemy_hills = (false, [])}
 
     end;;
 
@@ -569,6 +627,11 @@ let loop engine =
         food = Hashtbl.create 20;
         my_hills = Hashtbl.create 10;
         enemy_hills = Hashtbl.create 20;
+
+        cache_my_ants = (false, []);
+        cache_food = (false, []);
+        cache_my_hills = (false, []);
+        cache_enemy_hills = (false, []);
     } in
 
     for count_row = 0 to (Array.length proto_gstate.tmap - 1) do
@@ -584,6 +647,7 @@ let loop engine =
         | Some state ->
             begin try (
                 wrap#set_state state;
+                wrap#invalidate_caches;
                 engine wrap;
                 flush Pervasives.stdout;
             ) with exc -> (

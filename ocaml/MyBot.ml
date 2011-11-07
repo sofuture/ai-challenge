@@ -41,19 +41,19 @@ let minimum_ants_alive_per_hill_for_guarding = 15;;
 
 let guards_per_hill = 5;;
 
+(* general tuning *)
+
+let ignore_distance = 10.;;
+
 (* -------------- *)
 (* explicit types *)
 (* -------------- *)
-
-type 'a option =
-    | None
-    | Some of 'a;;
 
 type order = ant * dir;;
 
 type hill_guards = location * ant list;;
 
-type survey = ant option * float * tile option * location;;
+type survey = ant option * float * tile option * location option;;
 
 (* helpers for initializing types *)
 
@@ -112,6 +112,7 @@ let get_tile_list state =
 let get_type_tiles state ttype =
     let loc_of_loc_extra (l,o) = l in
     match ttype with 
+    | `Goal -> []
     | `Water -> []
     | `Land -> []
     | `Food -> 
@@ -155,7 +156,10 @@ let rec print_ant_list ants =
     | h::t ->
         let r, c = h.loc in
         let role = string_of_role h.role in
-        ddebug (Printf.sprintf "(%d,%d) - %s\n" r c role);
+        let s = match h.goal with
+        | None -> Printf.sprintf "(%d,%d) - %s\n" r c role
+        | Some (gr,gc) -> Printf.sprintf "(%d,%d) (goal:%d,%d)- %s\n" r c gr gc role in
+        ddebug s;
         print_ant_list t;;
 
 (* find how far all known <thing> is from given ant *)
@@ -180,7 +184,16 @@ let food_distances state ant = thing_distances state ant [`Food];;
 (* find desired thing closest to given ant *)
 let find_best_move_for_ant state ant =
     let distances = thing_distances state ant [`Food] in
-    List.fold_left min_distance dummy_survey distances;;
+    let bt = List.fold_left min_distance dummy_survey distances in
+    let (bt_ant, bt_dist, bt_tile, bt_loc) = bt in    
+    if bt_dist < ignore_distance then
+        bt
+    else 
+        let g = match ant.goal with
+        | None -> (0,0)
+        | Some c -> c in
+        (* this isn't quite right *)
+        (Some ant, 0.0, Some `Goal, g);;
 
 (* --------- *)
 (* ant logic *)
@@ -252,8 +265,7 @@ let mybot_engine state =
         state#finish_turn ()
     ) else (
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
-        List.iter (fun a -> let r, c = a.loc in ddebug (Printf.sprintf "oant at %d %d\n" r
-        c)) state#my_ants;
+        List.iter (fun a -> let r, c = a.loc in ddebug (Printf.sprintf "oant at %d %d\n" r c)) state#my_ants;
         let (guards, free) = give_roles state state#my_ants in
         let _ = step_free_ants state free [] in
         let _ = step_guard_ants state guards [] in

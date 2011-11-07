@@ -4,15 +4,15 @@ build :
 	sh build.sh
 
 clean : clean-submission
-	rm -rf ocaml/_build
-	rm -f ocaml/MyBot.debug
-	rm -f ocaml/MyBot.native
+	sh clean.sh
 
 run :
 	sh run.sh
 
 test :
 	sh test_bot.sh
+
+log : logs
 
 logs :
 	sh logs.sh

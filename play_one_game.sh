@@ -9,20 +9,13 @@ sh build.sh
 --end_wait=0.25 --verbose \
 --log_dir tools/game_logs \
 --turntime=300 \
---turns 100 \
+--turns 200 \
 --map_file tools/maps/random_walk_08p_02.map \
 "./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" 
-#"python tools/sample_bots/python/LeftyBot.py" \
-#"python tools/sample_bots/python/LeftyBot.py" \
-#"python tools/sample_bots/python/LeftyBot.py" \
-#"python tools/sample_bots/python/LeftyBot.py" \
-#"python tools/sample_bots/python/LeftyBot.py" \
-#"python tools/sample_bots/python/LeftyBot.py" \
-#"python tools/sample_bots/python/LeftyBot.py" \
+"python tools/sample_bots/python/LeftyBot.py" \
+"python tools/sample_bots/python/HunterBot.py" \
+"python tools/sample_bots/python/GreedyBot.py" \
+"python tools/sample_bots/python/HoldBot.py" \
+"python tools/sample_bots/python/RandomBot.py" \
+"python tools/sample_bots/python/HunterBot.py" \
+"python tools/sample_bots/python/GreedyBot.py" 

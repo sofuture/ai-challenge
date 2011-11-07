@@ -1,9 +1,11 @@
 val out_chan : out_channel
 val get_time : unit -> float
 val ddebug : string -> unit
+type 'a option = None | Some of 'a
 type role = [ `Dead | `Explorer | `Freelancer | `Guard | `Warrior ]
 type dir = [ `E | `N | `S | `Stop | `W ]
-type tile = [ `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
+type tile =
+    [ `Ant | `Dead | `Food | `Goal | `Hill | `Land | `Unseen | `Water ]
 type game_setup = {
   loadtime : int;
   turntime : int;
@@ -18,7 +20,13 @@ type game_setup = {
 type mapb = { content : int; seen : int; row : int; col : int; }
 type location = int * int
 type loc_extra = location * int
-type ant = { role : role; loc : location; r : int; c : int; owner : int; }
+type ant = {
+  role : role;
+  loc : location;
+  owner : int;
+  goal : location option;
+  lseen : int;
+}
 type order = location * dir
 type tgame_state = {
   setup : game_setup;
@@ -31,13 +39,18 @@ type tgame_state = {
   my_hills : (location, loc_extra) Hashtbl.t;
   enemy_hills : (location, loc_extra) Hashtbl.t;
   enemy_ants : loc_extra list;
+  cache_my_ants : bool * ant list;
+  cache_food : bool * location list;
+  cache_my_hills : bool * loc_extra list;
+  cache_enemy_hills : bool * loc_extra list;
 }
 val proto_tile : mapb
 val tile_of_int :
-  int -> [> `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
+  int -> [> `Ant | `Dead | `Food | `Goal | `Hill | `Land | `Unseen | `Water ]
 val string_of_dir : [< `E | `N | `S | `Stop | `W ] -> string
 val int_of_tile :
-  [< `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ] -> int
+  [< `Ant | `Dead | `Food | `Goal | `Hill | `Land | `Unseen | `Water ] -> int
+val random_location : tgame_state -> int * int
 val visible : tgame_state -> int * int -> bool
 val ht_to_key_list : 'a -> 'b -> 'a list -> 'a list
 val ht_to_val_list : 'a -> 'b -> 'b list -> 'b list
@@ -84,7 +97,8 @@ val step_dir :
   [< `E | `N | `S | `Stop | `W ] -> int * int -> int * int -> int * int
 val get_tile :
   mapb array array ->
-  int * int -> [> `Ant | `Dead | `Food | `Hill | `Land | `Unseen | `Water ]
+  int * int ->
+  [> `Ant | `Dead | `Food | `Goal | `Hill | `Land | `Unseen | `Water ]
 val shorter_dist : int -> int -> int -> bool * int
 val stepdistance_ndirection :
   int * int ->
@@ -124,6 +138,7 @@ class swrap :
     method get_player_seed : int
     method get_state : tgame_state
     method get_tile : int * int -> tile
+    method invalidate_caches : unit
     method is_occupied : location -> bool
     method issue_order : order -> unit
     method move_ant : location -> dir -> location -> unit
