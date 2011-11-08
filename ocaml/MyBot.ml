@@ -59,7 +59,7 @@ type survey = ant option * float * tile option * location option;;
 
 (* helpers for initializing types *)
 
-let dummy_survey = (None, 1000., None, (0,0));;
+let proto_survey = (None, 1000., None, (0,0));;
 
 (* ------------- *)
 (* general utils *)
@@ -186,7 +186,7 @@ let food_distances state ant = thing_distances state ant [`Food];;
 (* find desired thing closest to given ant *)
 let find_best_move_for_ant state ant =
     let distances = thing_distances state ant [`Food; `Hill] in
-    let bt = List.fold_left min_distance dummy_survey distances in
+    let bt = List.fold_left min_distance proto_survey distances in
     let (bt_ant, bt_dist, bt_tile, bt_loc) = bt in    
     if bt_dist < ignore_distance then
         bt
@@ -257,6 +257,12 @@ let give_roles state ants =
             ((hill, guards_new) :: guards, left_new) in 
         List.fold_left fg ([], ants) hills;;
 
+let print_ants ants = 
+    let pant a =
+        let r, c = a.loc in
+        ddebug (Printf.sprintf "ant at %d %d\n" r c) in
+    List.iter pant ants;;
+
 (* ----------- *)
 (* goooooooo!! *)
 (* ----------- *)
@@ -270,10 +276,7 @@ let mybot_engine state =
         state#finish_turn ()
     ) else (
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
-        let pant a =
-            let r, c = a.loc in
-            ddebug (Printf.sprintf "ant at %d %d\n" r c) in
-        List.iter pant state#my_ants;
+        print_ants state#my_ants;
         let (guards, free) = give_roles state state#my_ants in
         let _ = step_free_ants state free [] in
         let _ = step_guard_ants state guards [] in

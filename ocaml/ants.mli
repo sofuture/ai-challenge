@@ -32,8 +32,8 @@ type order = location * dir
 type tgame_state = {
   setup : game_setup;
   turn : int;
-  tmap : mapb array array;
   go_time : float;
+  tmap : mapb array array;
   now_occupied : (location, int) Hashtbl.t;
   my_ants : (location, ant) Hashtbl.t;
   food : (location, mapb) Hashtbl.t;

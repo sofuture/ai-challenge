@@ -75,16 +75,24 @@ type ant = {
 type order = location * dir;;
 
 type tgame_state = {
+
+    (* general *)
     setup : game_setup;
     turn : int;
-    tmap: mapb array array; 
     go_time: float;
+
+    (* map *)
+    tmap: mapb array array; 
+
+    (* things *)
     now_occupied : (location, int) Hashtbl.t;
     my_ants : (location, ant) Hashtbl.t;
     food : (location, mapb) Hashtbl.t;
     my_hills : (location, loc_extra) Hashtbl.t;
     enemy_hills : (location, loc_extra) Hashtbl.t;
     enemy_ants : loc_extra list;
+
+    (* cached values *)
     cache_my_ants : ant list cache;
     cache_food : location list cache;
     cache_my_hills : loc_extra list cache;
