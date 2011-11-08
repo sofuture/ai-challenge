@@ -34,7 +34,6 @@ type tgame_state = {
   turn : int;
   go_time : float;
   tmap : mapb array array;
-  now_occupied : (location, int) Hashtbl.t;
   my_ants : (location, ant) Hashtbl.t;
   food : (location, mapb) Hashtbl.t;
   my_hills : (location, loc_extra) Hashtbl.t;
@@ -78,9 +77,6 @@ val clear_gstate : tgame_state -> tgame_state
 val add_hill : tgame_state -> int -> int -> int -> tgame_state
 val add_ant : tgame_state -> int -> int -> int -> tgame_state
 val new_goal_for : tgame_state -> ant -> int * int
-val reset_occupied : tgame_state -> unit
-val remove_occupied_location : tgame_state -> location -> unit
-val add_occupied_location : tgame_state -> location -> unit
 val is_occupied_location : tgame_state -> location -> bool
 val initialize_map : tgame_state -> tgame_state
 val add_line : tgame_state -> string -> tgame_state
@@ -125,7 +121,6 @@ class swrap :
   tgame_state ->
   object
     val mutable state : tgame_state
-    method add_occupied : location -> unit
     method bounds : int * int
     method centre : int * int
     method direction : int * int -> int * int -> dir * dir
@@ -149,8 +144,6 @@ class swrap :
     method my_hills : loc_extra list
     method new_goal_for : ant -> int * int
     method passable : int * int -> bool
-    method remove_occupied : location -> unit
-    method reset_occupied : unit
     method set_state : tgame_state -> unit
     method step_dir : int * int -> dir -> int * int
     method time_remaining : float

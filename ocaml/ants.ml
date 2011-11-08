@@ -85,7 +85,6 @@ type tgame_state = {
     tmap: mapb array array; 
 
     (* things *)
-    now_occupied : (location, int) Hashtbl.t;
     my_ants : (location, ant) Hashtbl.t;
     food : (location, mapb) Hashtbl.t;
     my_hills : (location, loc_extra) Hashtbl.t;
@@ -275,25 +274,9 @@ let new_goal_for gstate ant =
     Hashtbl.replace gstate.my_ants loc {old_ant with goal = Some new_goal};
     new_goal;;
 
-let reset_occupied gstate =
-    Hashtbl.clear gstate.now_occupied;
-    let insert_loc k v = Hashtbl.add gstate.now_occupied v.loc 0; () in
-    let _ = Hashtbl.iter insert_loc gstate.my_ants in 
-    ();;
-
-let remove_occupied_location gstate loc = 
-    try (
-        Hashtbl.remove gstate.now_occupied loc
-    ) with _ -> ();;
-
-let add_occupied_location gstate loc = 
-    try (
-        Hashtbl.add gstate.now_occupied loc 0
-    ) with _ -> ();;
-
 let is_occupied_location gstate loc =
     try (
-        Hashtbl.mem gstate.now_occupied loc
+        Hashtbl.mem gstate.my_ants loc
     ) with _ -> false;;
 
 let initialize_map gstate =
@@ -386,18 +369,9 @@ let issue_order ((row, col), cdir) =
     Printf.printf "%s" os;;
 
 let move_ant gstate f_loc dir t_loc =
-    (* move ant *)
     let a = Hashtbl.find gstate.my_ants f_loc in
     Hashtbl.remove gstate.my_ants f_loc;
     Hashtbl.add gstate.my_ants t_loc { a with loc = t_loc; };
-
-    (* eat food if there is some *)
-    Hashtbl.remove gstate.food t_loc;
-
-    (* occupied management, this can probably be deprecated *)
-    remove_occupied_location gstate f_loc;
-    add_occupied_location gstate t_loc;
-
     issue_order (f_loc, dir);;
 
 (* Print go, newline, and flush buffer *)
@@ -576,9 +550,6 @@ class swrap state =
         method get_map = state.tmap
         method get_player_seed = state.setup.player_seed
         method is_occupied loc = is_occupied_location state loc
-        method remove_occupied loc = remove_occupied_location state loc
-        method add_occupied loc = add_occupied_location state loc
-        method reset_occupied = reset_occupied state
         method move_ant loc1 (d:dir) loc2 = move_ant state loc1 d loc2
         method enemy_ants = state.enemy_ants
         method new_goal_for ant = new_goal_for state ant
@@ -652,7 +623,6 @@ let loop engine =
         tmap = Array.make_matrix 1 1 proto_tile; 
         go_time = 0.0;
         enemy_ants = [];
-        now_occupied = Hashtbl.create 20; 
         my_ants = Hashtbl.create 20;
         food = Hashtbl.create 20;
         my_hills = Hashtbl.create 10;

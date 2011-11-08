@@ -269,7 +269,6 @@ let print_ants ants =
 
 let mybot_engine state =
     state#update_vision;
-    state#reset_occupied;
     print_ant_list state#my_ants;
     if state#turn = 0 then (
         Random.self_init ();
