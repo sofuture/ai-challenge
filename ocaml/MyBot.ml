@@ -45,6 +45,8 @@ let guards_per_hill = 5;;
 
 let ignore_distance = 10.;;
 
+let goal_close_enough = 5.;;
+
 (* -------------- *)
 (* explicit types *)
 (* -------------- *)
@@ -183,7 +185,7 @@ let food_distances state ant = thing_distances state ant [`Food];;
 
 (* find desired thing closest to given ant *)
 let find_best_move_for_ant state ant =
-    let distances = thing_distances state ant [`Food] in
+    let distances = thing_distances state ant [`Food; `Hill] in
     let bt = List.fold_left min_distance dummy_survey distances in
     let (bt_ant, bt_dist, bt_tile, bt_loc) = bt in    
     if bt_dist < ignore_distance then
@@ -191,7 +193,11 @@ let find_best_move_for_ant state ant =
     else 
         let g = match ant.goal with
         | None -> (0,0)
-        | Some c -> c in
+        | Some c -> 
+            if (state#distance ant.loc c) < goal_close_enough then
+                (state#new_goal_for ant)
+            else
+                c in
         (Some ant, 0.0, Some `Goal, g);;
 
 (* --------- *)
@@ -264,7 +270,10 @@ let mybot_engine state =
         state#finish_turn ()
     ) else (
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
-        List.iter (fun a -> let r, c = a.loc in ddebug (Printf.sprintf "oant at %d %d\n" r c)) state#my_ants;
+        let pant a =
+            let r, c = a.loc in
+            ddebug (Printf.sprintf "ant at %d %d\n" r c) in
+        List.iter pant state#my_ants;
         let (guards, free) = give_roles state state#my_ants in
         let _ = step_free_ants state free [] in
         let _ = step_guard_ants state guards [] in

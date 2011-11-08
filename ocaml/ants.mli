@@ -77,6 +77,7 @@ val clear_tile : mapb -> int -> int -> mapb
 val clear_gstate : tgame_state -> tgame_state
 val add_hill : tgame_state -> int -> int -> int -> tgame_state
 val add_ant : tgame_state -> int -> int -> int -> tgame_state
+val new_goal_for : tgame_state -> ant -> int * int
 val reset_occupied : tgame_state -> unit
 val remove_occupied_location : tgame_state -> location -> unit
 val add_occupied_location : tgame_state -> location -> unit
@@ -146,6 +147,7 @@ class swrap :
     method move_ant : location -> dir -> location -> unit
     method my_ants : ant list
     method my_hills : loc_extra list
+    method new_goal_for : ant -> int * int
     method passable : int * int -> bool
     method remove_occupied : location -> unit
     method reset_occupied : unit

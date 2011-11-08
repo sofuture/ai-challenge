@@ -249,7 +249,6 @@ let add_ant gstate row col owner =
             goal = Some goal } in
         match owner with
         | 0 ->
-            (*Hashtbl.remove gstate.my_ants (row, col);*)
             if not (Hashtbl.mem gstate.my_ants loc) then
                 Hashtbl.add gstate.my_ants loc new_ant
             else  (
@@ -260,6 +259,13 @@ let add_ant gstate row col owner =
         | n ->
             {gstate with enemy_ants = ((row, col), owner) :: gstate.enemy_ants}
     ) with _ -> gstate;;
+
+let new_goal_for gstate ant =
+    let loc = ant.loc in
+    let old_ant = Hashtbl.find gstate.my_ants loc in
+    let new_goal = random_location gstate in
+    Hashtbl.replace gstate.my_ants loc {old_ant with goal = Some new_goal};
+    new_goal;;
 
 let reset_occupied gstate =
     Hashtbl.clear gstate.now_occupied;
@@ -567,6 +573,7 @@ class swrap state =
         method reset_occupied = reset_occupied state
         method move_ant loc1 (d:dir) loc2 = move_ant state loc1 d loc2
         method enemy_ants = state.enemy_ants
+        method new_goal_for ant = new_goal_for state ant
 
         method my_ants = 
             match state.cache_my_ants with

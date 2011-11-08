@@ -9,7 +9,7 @@ sh build.sh
 --end_wait=0.25 --verbose \
 --log_dir tools/game_logs \
 --turntime=300 \
---turns 200 \
+--turns 1000 \
 --strict \
 --map_file tools/maps/random_walk_08p_02.map \
 "./ocaml/MyBot.native" \
