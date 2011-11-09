@@ -101,7 +101,7 @@ type tgame_state = {
     cache_my_hills : loc_extra list cache;
     cache_enemy_hills : loc_extra list cache;
 
-    goal_maps : goal_map list;
+    goal_maps : (goal_type, goal_map) Hashtbl.t;
 };;
 
 let proto_tile = {
@@ -531,6 +531,58 @@ let remove_dead_ants gstate =
         Hashtbl.remove gstate.my_ants k in
     List.iter rem dead_keys
 
+let add_goal gstate gtype location value =
+    if Hashtbl.mem gstate.goal_maps gtype then (
+        let (tr,tc) = location in
+        let r = tr - 1 in
+        let c = tc - 1 in
+        let map = Hashtbl.find gstate.goal_maps gtype in
+        let (_, locs, mat) = map in
+        mat.(r).(c) <- value;
+        Hashtbl.replace gstate.goal_maps gtype (gtype, location::locs, mat)
+    ) else (
+        let mat = Array.make_matrix gstate.setup.rows gstate.setup.cols 1.0 in
+        Hashtbl.add gstate.goal_maps gtype (gtype, [location], mat)
+    );;
+
+(*
+let cells_from (r,c) =
+    let pot = [ (r-1, c); (r, c-1); (r, c+1); (r+1, c); ] in
+    let valid (fr,fc) = (fr >= 0) && (fr < mheight) && (fc >= 0) && (fc < mwidth) in
+    List.filter valid pot;;
+
+let diffusion_value mdat r c =
+    let t = mdat.(r).(c) in
+    if t > 0.0 then (
+        let others = cells_from (r,c) in
+        let sum_others acc (tr,tc) = acc +. mdat.(tr).(tc) in
+        t +. (0.12 *. List.fold_left sum_others 0.0 others)
+    ) else (
+        0.0
+    );;
+
+let new_cells_from mdat loc explored =
+    let valid el =
+        let r, c = el in
+        if Hashtbl.mem explored el then false
+        else true in
+    List.filter valid (cells_from loc);;
+
+let rec diffuse mdat frontier explored =
+    match frontier with
+    | [] -> mdat
+    | h :: t ->
+        let r, c = h in
+        if Hashtbl.mem explored h then
+            diffuse mdat t explored
+        else (
+            Hashtbl.add explored h true;
+            let next = new_cells_from mdat h explored in
+            mdat.(r).(c) <- diffusion_value mdat r c;
+            diffuse mdat (t@next) explored
+        );;
+*)
+
 class swrap state =
     object (self)
     val mutable state = state
@@ -561,7 +613,7 @@ class swrap state =
         method new_goal_for ant = new_goal_for state ant
 
         method goal_maps = state.goal_maps
-        method add_goal (ttype:goal_type) (loc:location) (value:float) = ()
+        method add_goal gtype location value = add_goal state gtype location value
         method diffuse = ()
 
         method my_ants = 
@@ -637,7 +689,7 @@ let loop engine =
         food = Hashtbl.create 20;
         my_hills = Hashtbl.create 10;
         enemy_hills = Hashtbl.create 20;
-        goal_maps = [];
+        goal_maps = Hashtbl.create 3;
         cache_my_ants = Invalid;
         cache_food = Invalid;
         cache_my_hills = Invalid;

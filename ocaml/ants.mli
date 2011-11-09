@@ -45,7 +45,7 @@ type tgame_state = {
   cache_food : location list cache;
   cache_my_hills : loc_extra list cache;
   cache_enemy_hills : loc_extra list cache;
-  goal_maps : goal_map list;
+  goal_maps : (goal_type, goal_map) Hashtbl.t;
 }
 val proto_tile : mapb
 val tile_of_int :
@@ -120,6 +120,7 @@ val passable : tgame_state -> int * int -> bool
 val centre : tgame_state -> int * int
 val time_remaining : tgame_state -> float
 val remove_dead_ants : tgame_state -> unit
+val add_goal : tgame_state -> goal_type -> location -> float -> unit
 class swrap :
   tgame_state ->
   object
@@ -141,7 +142,7 @@ class swrap :
     method get_player_seed : int
     method get_state : tgame_state
     method get_tile : int * int -> tile
-    method goal_maps : goal_map list
+    method goal_maps : (goal_type, goal_map) Hashtbl.t
     method invalidate_caches : unit
     method is_occupied : location -> bool
     method issue_order : order -> unit
