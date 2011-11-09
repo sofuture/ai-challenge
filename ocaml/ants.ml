@@ -74,6 +74,10 @@ type ant = {
 
 type order = location * dir;;
 
+type goal_type = [`Food | `Hills | `Explore | `EnemyAnts];;
+
+type goal_map = goal_type * location list * float array array;;
+
 type tgame_state = {
 
     (* general *)
@@ -96,6 +100,8 @@ type tgame_state = {
     cache_food : location list cache;
     cache_my_hills : loc_extra list cache;
     cache_enemy_hills : loc_extra list cache;
+
+    goal_maps : goal_map list;
 };;
 
 let proto_tile = {
@@ -554,6 +560,10 @@ class swrap state =
         method enemy_ants = state.enemy_ants
         method new_goal_for ant = new_goal_for state ant
 
+        method goal_maps = state.goal_maps
+        method add_goal (ttype:goal_type) (loc:location) (value:float) = ()
+        method diffuse = ()
+
         method my_ants = 
             match state.cache_my_ants with
             | Valid c -> c
@@ -627,7 +637,7 @@ let loop engine =
         food = Hashtbl.create 20;
         my_hills = Hashtbl.create 10;
         enemy_hills = Hashtbl.create 20;
-
+        goal_maps = [];
         cache_my_ants = Invalid;
         cache_food = Invalid;
         cache_my_hills = Invalid;

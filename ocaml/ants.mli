@@ -29,6 +29,8 @@ type ant = {
   lseen : int;
 }
 type order = location * dir
+type goal_type = [ `EnemyAnts | `Explore | `Food | `Hills ]
+type goal_map = goal_type * location list * float array array
 type tgame_state = {
   setup : game_setup;
   turn : int;
@@ -43,6 +45,7 @@ type tgame_state = {
   cache_food : location list cache;
   cache_my_hills : loc_extra list cache;
   cache_enemy_hills : loc_extra list cache;
+  goal_maps : goal_map list;
 }
 val proto_tile : mapb
 val tile_of_int :
@@ -121,8 +124,10 @@ class swrap :
   tgame_state ->
   object
     val mutable state : tgame_state
+    method add_goal : goal_type -> location -> float -> unit
     method bounds : int * int
     method centre : int * int
+    method diffuse : unit
     method direction : int * int -> int * int -> dir * dir
     method distance : int * int -> int * int -> float
     method distance2 : int * int -> int * int -> int
@@ -136,6 +141,7 @@ class swrap :
     method get_player_seed : int
     method get_state : tgame_state
     method get_tile : int * int -> tile
+    method goal_maps : goal_map list
     method invalidate_caches : unit
     method is_occupied : location -> bool
     method issue_order : order -> unit
