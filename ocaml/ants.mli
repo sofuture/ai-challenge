@@ -29,6 +29,8 @@ type ant = {
   lseen : int;
 }
 type order = location * dir
+type goal_type = [ `EnemyAnts | `Explore | `Food | `Hills ]
+type goal_map = goal_type * location list * float array array
 type tgame_state = {
   setup : game_setup;
   turn : int;
@@ -43,6 +45,7 @@ type tgame_state = {
   cache_food : location list cache;
   cache_my_hills : loc_extra list cache;
   cache_enemy_hills : loc_extra list cache;
+  goal_maps : (goal_type, goal_map) Hashtbl.t;
 }
 val proto_tile : mapb
 val tile_of_int :
@@ -117,12 +120,25 @@ val passable : tgame_state -> int * int -> bool
 val centre : tgame_state -> int * int
 val time_remaining : tgame_state -> float
 val remove_dead_ants : tgame_state -> unit
+val add_goal : tgame_state -> goal_type -> location -> float -> unit
+val cells_from : int * int -> int * int -> (int * int) list
+val diffusion_value : float array array -> int * int -> int * int -> float
+val new_cells_from :
+  'a ->
+  int * int -> (int * int, 'b) Hashtbl.t -> int * int -> (int * int) list
+val diffuse :
+  tgame_state ->
+  float array array ->
+  (int * int) list -> (int * int, bool) Hashtbl.t -> float array array
+val print_diffuse_map : float array array -> unit
 class swrap :
   tgame_state ->
   object
     val mutable state : tgame_state
+    method add_goal : goal_type -> location -> float -> unit
     method bounds : int * int
     method centre : int * int
+    method diffuse : unit
     method direction : int * int -> int * int -> dir * dir
     method distance : int * int -> int * int -> float
     method distance2 : int * int -> int * int -> int
@@ -136,6 +152,7 @@ class swrap :
     method get_player_seed : int
     method get_state : tgame_state
     method get_tile : int * int -> tile
+    method goal_maps : (goal_type, goal_map) Hashtbl.t
     method invalidate_caches : unit
     method is_occupied : location -> bool
     method issue_order : order -> unit

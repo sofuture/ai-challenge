@@ -130,7 +130,7 @@ let get_type_tiles state ttype =
     | `Unseen -> [];;
 
 let find_n_closest_ants state ants loc n =
-    let dsort ant ant2= 
+    let dsort ant ant2 = 
         let ant_distance = state#distance2 loc ant.loc in
         let ant2_distance = state#distance2 loc ant2.loc in
         compare ant_distance ant2_distance in
@@ -263,6 +263,42 @@ let print_ants ants =
         ddebug (Printf.sprintf "ant at %d %d\n" r c) in
     List.iter pant ants;;
 
+(* ------------- *)
+(* map diffusion *)
+(* ------------- *)
+
+let goal_type_tiles state gtype =
+    match gtype with
+    | `Food -> get_type_tiles state `Food
+    | `Hills -> get_type_tiles state `Hill
+    | _ -> [];;
+
+let rec set_goals_for state types =
+    match types with
+    | [] -> ()
+    | h::t ->
+        let mint = Int32.to_int Int32.max_int in
+        match h with
+        | `Explore ->
+            let (r,c) = state#bounds in
+            let m = state#get_map in
+            for i = 0 to (Array.length m - 1) do
+                for j = 0 to (Array.length m.(i) - 1) do
+                    let seen = m.(i).(j).seen in
+                    let v = float_of_int (mint - ((200 - seen) * 300)) in
+                    state#add_goal `Explore (r,c) v
+                done;
+            done;
+            set_goals_for state t
+        | _ ->
+            let ts = goal_type_tiles state h in
+            let add p = state#add_goal h p (float_of_int mint); () in
+            List.iter add ts;
+            set_goals_for state t;;
+
+let set_goals state = 
+    set_goals_for state [`Food;`Hills]
+
 (* ----------- *)
 (* goooooooo!! *)
 (* ----------- *)
@@ -274,6 +310,12 @@ let mybot_engine state =
         Random.self_init ();
         state#finish_turn ()
     ) else (
+        set_goals state;
+
+        (* don't call this *)
+        (* state#diffuse; *)
+        (* because it will shit all over your life *)
+
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
         print_ants state#my_ants;
         let (guards, free) = give_roles state state#my_ants in
