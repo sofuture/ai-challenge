@@ -545,43 +545,50 @@ let add_goal gstate gtype location value =
         Hashtbl.add gstate.goal_maps gtype (gtype, [location], mat)
     );;
 
-(*
-let cells_from (r,c) =
+
+let cells_from (r,c) (mheight, mwidth) =
     let pot = [ (r-1, c); (r, c-1); (r, c+1); (r+1, c); ] in
     let valid (fr,fc) = (fr >= 0) && (fr < mheight) && (fc >= 0) && (fc < mwidth) in
     List.filter valid pot;;
 
-let diffusion_value mdat r c =
+let diffusion_value mdat (r,c) bounds =
     let t = mdat.(r).(c) in
     if t > 0.0 then (
-        let others = cells_from (r,c) in
+        let others = cells_from (r,c) bounds in
         let sum_others acc (tr,tc) = acc +. mdat.(tr).(tc) in
         t +. (0.12 *. List.fold_left sum_others 0.0 others)
     ) else (
         0.0
     );;
 
-let new_cells_from mdat loc explored =
+let new_cells_from mdat loc explored bounds =
     let valid el =
-        let r, c = el in
         if Hashtbl.mem explored el then false
         else true in
-    List.filter valid (cells_from loc);;
+    List.filter valid (cells_from loc bounds);;
 
-let rec diffuse mdat frontier explored =
+let rec diffuse gstate mdat frontier explored =
     match frontier with
     | [] -> mdat
     | h :: t ->
         let r, c = h in
         if Hashtbl.mem explored h then
-            diffuse mdat t explored
+            diffuse gstate mdat t explored
         else (
+            let bounds = (gstate.setup.rows, gstate.setup.cols) in
             Hashtbl.add explored h true;
-            let next = new_cells_from mdat h explored in
-            mdat.(r).(c) <- diffusion_value mdat r c;
-            diffuse mdat (t@next) explored
+            let next = new_cells_from mdat h explored bounds in
+            mdat.(r).(c) <- diffusion_value mdat (r,c) bounds;
+            diffuse gstate mdat (t@next) explored
         );;
-*)
+
+let print_diffuse_map map =
+    for i = 0 to (Array.length map) - 1 do
+        for j = 0 to (Array.length map.(i)) - 1 do
+            ddebug (Printf.sprintf "%4f " map.(i).(j))
+        done;
+        ddebug "\n"
+    done;;
 
 class swrap state =
     object (self)
@@ -614,7 +621,15 @@ class swrap state =
 
         method goal_maps = state.goal_maps
         method add_goal gtype location value = add_goal state gtype location value
-        method diffuse = ()
+        method diffuse = 
+            let diffuse_one k (ttype, loc_list, map) =
+                print_diffuse_map (
+                List.fold_left
+                (fun acc x -> diffuse state acc [x] (Hashtbl.create 20))
+                map
+                loc_list); 
+                () in
+            Hashtbl.iter diffuse_one state.goal_maps;
 
         method my_ants = 
             match state.cache_my_ants with

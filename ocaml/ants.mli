@@ -121,6 +121,16 @@ val centre : tgame_state -> int * int
 val time_remaining : tgame_state -> float
 val remove_dead_ants : tgame_state -> unit
 val add_goal : tgame_state -> goal_type -> location -> float -> unit
+val cells_from : int * int -> int * int -> (int * int) list
+val diffusion_value : float array array -> int * int -> int * int -> float
+val new_cells_from :
+  'a ->
+  int * int -> (int * int, 'b) Hashtbl.t -> int * int -> (int * int) list
+val diffuse :
+  tgame_state ->
+  float array array ->
+  (int * int) list -> (int * int, bool) Hashtbl.t -> float array array
+val print_diffuse_map : float array array -> unit
 class swrap :
   tgame_state ->
   object
