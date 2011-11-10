@@ -1,47 +1,44 @@
 (* Obviously, something has to invoke a_star *)
-   
-(**FIX**)
-val Rows = 15
-val Cols = 15
-val Max_Iters = Rows * Cols / 3
 
-(* def a_star(start: Coordinate, goal: Coordinate) *)
+let Rows = 15;;
+
+let Cols = 15;;
+
+let Max_Iters = Rows * Cols / 3;;
+
+(* Coordinate -> Coordinate -> Unit *)
 let find_dir_with_a_star start goalie =
-
     let closed_set = Array.make_matrix Cols Rows false in
     let queue = Base.PriorityQueue.make (fun (_, _, p1) (_, _, p2) -> p1 < p2) in
-
     let cost_vals = Array.make_matrix Cols Rows -1 in
     let heuristic_vals = Array.make_matrix Cols Rows -1 in
-    let total_vals = = Array.make_matrix Cols Rows -1 in
-    let breadcrumb_vals = = Array.make_matrix Cols Rows {y = -1; x = -1; priority = -1} in
+    let total_vals = Array.make_matrix Cols Rows -1 in
+    let breadcrumb_vals = Array.make_matrix Cols Rows {y = -1; x = -1; priority = -1} in
 
-	let cost_vals.(start.y).(start.x) = 0 in
-	let heuristic_vals.(start.y).(start.x) = manhattan_distance start goalie in
-	let total_vals.(start.y).(start.x) = cost_vals.(start.y).(start.x) + heuristic_vals.(start.y).(start.x) in
+    cost_vals.(start.y).(start.x) <- 0;
+    heuristic_vals.(start.y).(start.x) <- manhattan_distance start goalie;
+    total_vals.(start.y).(start.x) <- cost_vals.(start.y).(start.x) + heuristic_vals.(start.y).(start.x);
+    queue.add {y = start.y; x = start.x; priority = total_vals.(start.y).(start.x)};
+    let stepdata = a_star_iterate {
+            loc = start; goal = goalie; closed = closed_set; pqueue = queue;
+            cost_arr = cost_vals; heuristic_arr = heuristic_vals;
+            total_arr = total_vals; breadcrumb_arr = breadcrumb_vals} 0 in
 
-    let queue.add {y = start.y; x = start.x; priority = total_vals.(start.y).(start.x)} in
+    if ((stepdata.loc.x > -1) && (stepdata.loc.y > -1)) then
+        eat_breadcrumbs stepdata.breadcrumb_arr stepdata.goal
+    else
+        ();;
 
-    let stepdata = a_star_iterate {loc = start; goal = goalie; closed = closed_set; pqueue = queue;
-								   cost_arr = cost_vals; heuristic_arr = heuristic_vals; total_arr = total_vals; breadcrumb_arr = breadcrumb_vals} 0 in
-	
-    if ((stepdata.loc.x > -1) && (stepdata.loc.y > -1)) then eat_breadcrumbs stepdata.breadcrumb_arr stepdata.goal
-	else ();;
-
-}
-
-
-(* def a_star_iterate(stepData: StepData, iters: Int) : StepData *)
+(* StepData -> Int -> StepData *)
 let rec a_star_iterate stepdata iters =
-    if (not(stepdata.queue.is_empty) && (iters < Max_Iters)) then (
-	
-		let loc = get_fresh_loc stepdata.queue stepdata.closed in
-
-        if ((loc.y == stepdata.goal.y) && (loc.x == stepdata.goal.x)) then generate_new_step_data stepData loc (* Exit point *) 
-		else (
-			let stepdata.closed.(loc.y).(loc.x) = true in
-			a_star_iterate (a_star_step (generate_new_step_data stepdata loc)) (iters + 1)
-		)
+    if not(stepdata.queue.is_empty) && (iters < Max_Iters) then (
+        let loc = get_fresh_loc stepdata.queue stepdata.closed in
+        if (loc.y == stepdata.goal.y) && (loc.x == stepdata.goal.x) then
+            generate_new_step_data stepData loc
+        else (
+            let stepdata.closed.(loc.y).(loc.x) = true in
+            a_star_iterate (a_star_step (generate_new_step_data stepdata loc)) (iters + 1)
+        )
 	
 	)
 	else generate_new_step_data stepdata {y = -1; x = -1; priority = -1};; (* Exit point *)
