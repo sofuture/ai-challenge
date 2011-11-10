@@ -1,19 +1,19 @@
 (* Obviously, something has to invoke a_star *)
 
-let Rows = 15;;
+let rows = 15;;
 
-let Cols = 15;;
+let cols = 15;;
 
-let Max_Iters = Rows * Cols / 3;;
+let max_iters = rows * cols / 3;;
 
 (* Coordinate -> Coordinate -> Unit *)
 let find_dir_with_a_star start goalie =
-    let closed_set = Array.make_matrix Cols Rows false in
+    let closed_set = Array.make_matrix cols rows false in
     let queue = Base.PriorityQueue.make (fun (_, _, p1) (_, _, p2) -> p1 < p2) in
-    let cost_vals = Array.make_matrix Cols Rows -1 in
-    let heuristic_vals = Array.make_matrix Cols Rows -1 in
-    let total_vals = Array.make_matrix Cols Rows -1 in
-    let breadcrumb_vals = Array.make_matrix Cols Rows {y = -1; x = -1; priority = -1} in
+    let cost_vals = Array.make_matrix cols rows -1 in
+    let heuristic_vals = Array.make_matrix cols rows -1 in
+    let total_vals = Array.make_matrix cols rows -1 in
+    let breadcrumb_vals = Array.make_matrix cols rows {y = -1; x = -1; priority = -1} in
 
     cost_vals.(start.y).(start.x) <- 0;
     heuristic_vals.(start.y).(start.x) <- manhattan_distance start goalie;
