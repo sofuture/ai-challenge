@@ -55,13 +55,13 @@ let navigate (orr, orc) dir =
     | `S -> (orr+1, orc)
     | `E -> (orr, orc+1)
     | `W -> (orr, orc-1)
-
+	
 let rec nav_dirs origin dirs =
     match dirs with
     | [] -> origin
     | h::t ->
         nav_dirs (navigate origin h) t;;
-
+		
 let cell_of_int ival = 
     if ival = 1 then `Blocked
     else if ival = 7 then `Seen
@@ -130,7 +130,41 @@ let cost (orr,orc) (nr,nc) =
 
 let is_solution point goal =
     0 = cost point goal;;
+	
+(* def findCoords(loc: Coordinate, dir: Direction) : Coordinate *)
+let find_coords pcoord dir =
+	let ret_coord = navigate (pcoord.y, pcoord.x) dir in
+	{y = ret_coord.y; x = ret_coord.x; priority = pcoord.priority};;
+	
+(* def findDirection(start: Coordinate, end: Coordinate) : Direction *)
+let find_direction start_coord end_coord =
+	if (end_coord.x == start_coord.x + 1) then `E
+    else if (end_coord.x == start_coord.x - 1) then `W
+    else if (end_coord.y == start_coord.y + 1) then `S
+    else if (end_coord.y == start_coord.y - 1) then `N
+    else ();;
+		
+(* def isPassable(terrain: Terrain) : Boolean *)
+let is_passable terrain =
+	((terrain != `Origin) && (terrain != `Blocked));;
 
+(* def getTerrain(coord: Coordinate) : Terrain *)        
+let get_terrain coord =
+	let x = coord.x in
+	let y = coord.y in
+		if (((x >= 0) && (x < mwidth)) && ((y >= 0) && (y < mheight))) then cell_of_int (map.(y).(x))
+		else ();;
+	
+(* def neighborsOf(loc: Coordinate) : List[Direction] *)
+let find_neighbors_of loc =
+    List.fold_left (fun acc x -> if (is_passable (get_terrain (find_coords loc x))) then x::acc else acc; ) () (`N::`E::`S::`W::());;
+
+(* def step(start: Coordinate, end: Coordinate) *)
+(* Do something with this if you want to draw the queries on the map and update the ant's location as it queries. *) 
+(* let step start_coord end_coord =
+    if (start_coord != ()) map.(start_coord.y).(start_coord.x) = Queried
+    map.(end_coord.y).(end_coord.x) = Self *)
+	
 let rec explore mdat frontier goal explored = 
     try
         let h = Queue.take frontier in
