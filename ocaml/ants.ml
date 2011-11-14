@@ -76,7 +76,7 @@ type order = location * dir;;
 
 type goal_type = [`Food | `Hills | `Explore | `EnemyAnts];;
 
-type goal_map = goal_type * location list * float array array;;
+type goal_map = goal_type * (location, bool) Hashtbl.t * float array array;;
 
 type tgame_state = {
 
@@ -542,10 +542,13 @@ let add_goal gstate gtype location value =
         let map = Hashtbl.find gstate.goal_maps gtype in
         let (_, locs, mat) = map in
         mat.(r).(c) <- value;
-        Hashtbl.replace gstate.goal_maps gtype (gtype, location::locs, mat)
+        Hashtbl.add locs location true;
+        Hashtbl.replace gstate.goal_maps gtype (gtype, locs, mat)
     ) else (
+        let locs = Hashtbl.create 20 in
+        Hashtbl.add locs location true;
         let mat = Array.make_matrix gstate.setup.rows gstate.setup.cols 1.0 in
-        Hashtbl.add gstate.goal_maps gtype (gtype, [location], mat)
+        Hashtbl.add gstate.goal_maps gtype (gtype, locs, mat)
     );;
 
 
@@ -655,19 +658,15 @@ class swrap state =
 
         method goal_maps = state.goal_maps
 
-        method clear_goals = Hashtbl.clear state.goal_maps
-        
         method add_goal gtype location value = add_goal state gtype location value
         
         method diffuse = 
-            let finner acc x =
-                let (r,c) = state.setup.rows, state.setup.cols in
-                diffuse state acc [x] (Hashtbl.create (r*c)) in
+            let (r,c) = state.setup.rows, state.setup.cols in
             let diffuse_one k (ttype, loc_list, map) =
-                ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state)); 
-                let _res = List.fold_left finner map loc_list in
-                ddebug (Printf.sprintf "end diffuse %f\n" (time_remaining
-                state));
+                ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state));
+                let locs = Hashtbl.fold ht_to_key_list loc_list [] in
+                let _res = diffuse state map locs (Hashtbl.create (r*c)) in
+                ddebug (Printf.sprintf "end diffuse %f\n" (time_remaining state));
                 () in
             Hashtbl.iter diffuse_one state.goal_maps
 

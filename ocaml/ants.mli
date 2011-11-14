@@ -30,7 +30,7 @@ type ant = {
 }
 type order = location * dir
 type goal_type = [ `EnemyAnts | `Explore | `Food | `Hills ]
-type goal_map = goal_type * location list * float array array
+type goal_map = goal_type * (location, bool) Hashtbl.t * float array array
 type tgame_state = {
   setup : game_setup;
   turn : int;
@@ -140,7 +140,6 @@ class swrap :
     method add_goal : goal_type -> location -> float -> unit
     method bounds : int * int
     method centre : int * int
-    method clear_goals : unit
     method diffuse : unit
     method direction : int * int -> int * int -> dir * dir
     method distance : int * int -> int * int -> float

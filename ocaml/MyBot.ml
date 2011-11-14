@@ -310,13 +310,8 @@ let mybot_engine state =
         Random.self_init ();
         state#finish_turn ()
     ) else (
-        state#clear_goals;
         set_goals state;
-
-        (* don't call this *)
         state#diffuse;
-        (* because it will shit all over your life *)
-
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");
         print_ants state#my_ants;
         let (guards, free) = give_roles state state#my_ants in
