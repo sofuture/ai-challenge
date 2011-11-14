@@ -533,8 +533,7 @@ let remove_dead_ants gstate =
         Hashtbl.remove gstate.my_ants k in
     List.iter rem dead_keys
 
-let add_goal gstate gtype location value =
-    ddebug (Printf.sprintf "goal maps has %d items\n" (Hashtbl.length gstate.goal_maps));
+let rec add_goal gstate gtype location value =
     if Hashtbl.mem gstate.goal_maps gtype then (
         let (tr,tc) = location in
         let r = tr - 1 in
@@ -548,7 +547,8 @@ let add_goal gstate gtype location value =
         let locs = Hashtbl.create 20 in
         Hashtbl.add locs location true;
         let mat = Array.make_matrix gstate.setup.rows gstate.setup.cols 1.0 in
-        Hashtbl.add gstate.goal_maps gtype (gtype, locs, mat)
+        Hashtbl.add gstate.goal_maps gtype (gtype, locs, mat);
+        add_goal gstate gtype location value
     );;
 
 
@@ -564,8 +564,10 @@ let cells_from gstate (r,c) (mheight, mwidth) =
     );;
 
 let diffusion_value gstate mdat (r,c) bounds =
+    ddebug (Printf.sprintf "%d %d\n" r c);
     let t = mdat.(r).(c) in
     if t > 0.0 then (
+        ddebug "blah\n";
         let others = cells_from gstate (r,c) bounds in
         let sum_others acc (tr,tc) = acc +. mdat.(tr).(tc) in
         t +. (0.12 *. List.fold_left sum_others 0.0 others)
@@ -590,6 +592,8 @@ let rec diffuse gstate mdat frontier explored =
             let bounds = (gstate.setup.rows, gstate.setup.cols) in
             Hashtbl.add explored h true;
             let next = new_cells_from gstate mdat h explored bounds in
+            ddebug (Printf.sprintf "%d %d %d %d\n" r c (Array.length mdat)
+            (Array.length mdat.(0)));
             mdat.(r).(c) <- diffusion_value gstate mdat (r,c) bounds;
             diffuse gstate mdat (t@next) explored
         );;
