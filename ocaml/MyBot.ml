@@ -310,6 +310,7 @@ let mybot_engine state =
         Random.self_init ();
         state#finish_turn ()
     ) else (
+        state#clear_goals;
         set_goals state;
 
         (* don't call this *)

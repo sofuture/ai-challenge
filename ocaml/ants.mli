@@ -140,6 +140,7 @@ class swrap :
     method add_goal : goal_type -> location -> float -> unit
     method bounds : int * int
     method centre : int * int
+    method clear_goals : unit
     method diffuse : unit
     method direction : int * int -> int * int -> dir * dir
     method distance : int * int -> int * int -> float

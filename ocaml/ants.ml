@@ -654,12 +654,15 @@ class swrap state =
         method new_goal_for ant = new_goal_for state ant
 
         method goal_maps = state.goal_maps
+
+        method clear_goals = Hashtbl.clear state.goal_maps
         
         method add_goal gtype location value = add_goal state gtype location value
         
         method diffuse = 
             let finner acc x =
-                diffuse state acc [x] (Hashtbl.create 1000) in
+                let (r,c) = state.setup.rows, state.setup.cols in
+                diffuse state acc [x] (Hashtbl.create (r*c)) in
             let diffuse_one k (ttype, loc_list, map) =
                 ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state)); 
                 let _res = List.fold_left finner map loc_list in
