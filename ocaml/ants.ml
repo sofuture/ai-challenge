@@ -564,10 +564,8 @@ let cells_from gstate (r,c) (mheight, mwidth) =
     );;
 
 let diffusion_value gstate mdat (r,c) bounds =
-    ddebug (Printf.sprintf "%d %d\n" r c);
     let t = mdat.(r).(c) in
     if t > 0.0 then (
-        ddebug "blah\n";
         let others = cells_from gstate (r,c) bounds in
         let sum_others acc (tr,tc) = acc +. mdat.(tr).(tc) in
         t +. (0.12 *. List.fold_left sum_others 0.0 others)
@@ -575,7 +573,7 @@ let diffusion_value gstate mdat (r,c) bounds =
         0.0
     );;
 
-let new_cells_from gstate mdat loc explored bounds =
+let new_cells_from gstate mdat loc frontier explored bounds =
     let valid el =
         if Hashtbl.mem explored el then false
         else true in
@@ -585,15 +583,14 @@ let rec diffuse gstate mdat frontier explored =
     match frontier with
     | [] -> mdat
     | h :: t ->
-        let r, c = h in
         if Hashtbl.mem explored h then
             diffuse gstate mdat t explored
         else (
+            ddebug (Printf.sprintf "explorin: %d %f\n" (List.length frontier) (time_remaining gstate));
+            let r, c = h in
             let bounds = (gstate.setup.rows, gstate.setup.cols) in
             Hashtbl.add explored h true;
-            let next = new_cells_from gstate mdat h explored bounds in
-            ddebug (Printf.sprintf "%d %d %d %d\n" r c (Array.length mdat)
-            (Array.length mdat.(0)));
+            let next = new_cells_from gstate mdat h frontier explored bounds in
             mdat.(r).(c) <- diffusion_value gstate mdat (r,c) bounds;
             diffuse gstate mdat (t@next) explored
         );;
@@ -669,7 +666,7 @@ class swrap state =
             let diffuse_one k (ttype, loc_list, map) =
                 ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state));
                 let locs = Hashtbl.fold ht_to_key_list loc_list [] in
-                let _res = diffuse state map locs (Hashtbl.create (r*c)) in
+                let _res = diffuse state map locs loc_list in
                 ddebug (Printf.sprintf "end diffuse %f\n" (time_remaining state));
                 () in
             Hashtbl.iter diffuse_one state.goal_maps

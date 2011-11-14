@@ -127,7 +127,8 @@ val diffusion_value :
   tgame_state -> float array array -> int * int -> int * int -> float
 val new_cells_from :
   tgame_state ->
-  'a -> int * int -> (location, 'b) Hashtbl.t -> int * int -> location list
+  'a ->
+  int * int -> 'b -> (location, 'c) Hashtbl.t -> int * int -> location list
 val diffuse :
   tgame_state ->
   float array array ->
