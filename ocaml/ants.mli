@@ -46,6 +46,7 @@ type tgame_state = {
   cache_my_hills : loc_extra list cache;
   cache_enemy_hills : loc_extra list cache;
   goal_maps : (goal_type, goal_map) Hashtbl.t;
+  cells_from : (location, location list) Hashtbl.t;
 }
 val proto_tile : mapb
 val tile_of_int :
@@ -121,15 +122,16 @@ val centre : tgame_state -> int * int
 val time_remaining : tgame_state -> float
 val remove_dead_ants : tgame_state -> unit
 val add_goal : tgame_state -> goal_type -> location -> float -> unit
-val cells_from : int * int -> int * int -> (int * int) list
-val diffusion_value : float array array -> int * int -> int * int -> float
+val cells_from : tgame_state -> int * int -> int * int -> location list
+val diffusion_value :
+  tgame_state -> float array array -> int * int -> int * int -> float
 val new_cells_from :
-  'a ->
-  int * int -> (int * int, 'b) Hashtbl.t -> int * int -> (int * int) list
+  tgame_state ->
+  'a -> int * int -> (location, 'b) Hashtbl.t -> int * int -> location list
 val diffuse :
   tgame_state ->
   float array array ->
-  (int * int) list -> (int * int, bool) Hashtbl.t -> float array array
+  location list -> (location, bool) Hashtbl.t -> float array array
 val print_diffuse_map : float array array -> unit
 class swrap :
   tgame_state ->

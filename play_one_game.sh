@@ -10,8 +10,8 @@ sh build.sh
 --turntime=1000 \
 --turns 1000 \
 --strict \
---map_file tools/maps/multi_hill_maze/multi_maze_08.map \
+--map_file tools/maps/multi_hill_maze/multi_maze_09.map \
 "./ocaml/MyBot.native" \
-"./ocaml/MyBot.native" \
+"python tools/sample_bots/python/HunterBot.py" \
 "python tools/sample_bots/python/HunterBot.py" \
 "python tools/sample_bots/python/HunterBot.py" 

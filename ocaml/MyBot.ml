@@ -313,7 +313,7 @@ let mybot_engine state =
         set_goals state;
 
         (* don't call this *)
-        (* state#diffuse; *)
+        state#diffuse;
         (* because it will shit all over your life *)
 
         ddebug (Printf.sprintf "\nabout to issue orders\n===================\n");

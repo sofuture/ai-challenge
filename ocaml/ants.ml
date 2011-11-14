@@ -102,6 +102,8 @@ type tgame_state = {
     cache_enemy_hills : loc_extra list cache;
 
     goal_maps : (goal_type, goal_map) Hashtbl.t;
+
+    cells_from : (location, location list) Hashtbl.t;
 };;
 
 let proto_tile = {
@@ -532,6 +534,7 @@ let remove_dead_ants gstate =
     List.iter rem dead_keys
 
 let add_goal gstate gtype location value =
+    ddebug (Printf.sprintf "goal maps has %d items\n" (Hashtbl.length gstate.goal_maps));
     if Hashtbl.mem gstate.goal_maps gtype then (
         let (tr,tc) = location in
         let r = tr - 1 in
@@ -546,26 +549,32 @@ let add_goal gstate gtype location value =
     );;
 
 
-let cells_from (r,c) (mheight, mwidth) =
-    let pot = [ (r-1, c); (r, c-1); (r, c+1); (r+1, c); ] in
-    let valid (fr,fc) = (fr >= 0) && (fr < mheight) && (fc >= 0) && (fc < mwidth) in
-    List.filter valid pot;;
+let cells_from gstate (r,c) (mheight, mwidth) =
+    if Hashtbl.mem gstate.cells_from (r,c) then
+        Hashtbl.find gstate.cells_from (r,c)
+    else (
+        let pot = [ (r-1, c); (r, c-1); (r, c+1); (r+1, c); ] in
+        let valid (fr,fc) = (fr >= 0) && (fr < mheight) && (fc >= 0) && (fc < mwidth) in
+        let res = List.filter valid pot in
+        Hashtbl.add gstate.cells_from (r,c) res;
+        res
+    );;
 
-let diffusion_value mdat (r,c) bounds =
+let diffusion_value gstate mdat (r,c) bounds =
     let t = mdat.(r).(c) in
     if t > 0.0 then (
-        let others = cells_from (r,c) bounds in
+        let others = cells_from gstate (r,c) bounds in
         let sum_others acc (tr,tc) = acc +. mdat.(tr).(tc) in
         t +. (0.12 *. List.fold_left sum_others 0.0 others)
     ) else (
         0.0
     );;
 
-let new_cells_from mdat loc explored bounds =
+let new_cells_from gstate mdat loc explored bounds =
     let valid el =
         if Hashtbl.mem explored el then false
         else true in
-    List.filter valid (cells_from loc bounds);;
+    List.filter valid (cells_from gstate loc bounds);;
 
 let rec diffuse gstate mdat frontier explored =
     match frontier with
@@ -577,59 +586,87 @@ let rec diffuse gstate mdat frontier explored =
         else (
             let bounds = (gstate.setup.rows, gstate.setup.cols) in
             Hashtbl.add explored h true;
-            let next = new_cells_from mdat h explored bounds in
-            mdat.(r).(c) <- diffusion_value mdat (r,c) bounds;
+            let next = new_cells_from gstate mdat h explored bounds in
+            mdat.(r).(c) <- diffusion_value gstate mdat (r,c) bounds;
             diffuse gstate mdat (t@next) explored
         );;
 
 let print_diffuse_map map =
-    for i = 0 to (Array.length map) - 1 do
-        for j = 0 to (Array.length map.(i)) - 1 do
-            ddebug (Printf.sprintf "%4f " map.(i).(j))
-        done;
-        ddebug "\n"
-    done;;
+    if true then ()
+    else 
+        for i = 0 to (Array.length map) - 1 do
+            for j = 0 to (Array.length map.(i)) - 1 do
+                ddebug (Printf.sprintf "%4f " map.(i).(j))
+            done;
+            ddebug "\n"
+        done;;
 
 class swrap state =
     object (self)
     val mutable state = state
+
         method bounds = state.setup.rows, state.setup.cols
+
         method issue_order (o:order) = issue_order o
+        
         method finish_turn () = finish_turn ()
+        
         method direction p1 p2 = ((direction self#bounds p1 p2): (dir * dir))
+        
         method step_dir loc (d:dir) = step_dir d self#bounds loc
+        
         method get_tile loc = ((get_tile state.tmap loc): tile)
+        
         method distance2 p1 p2 = distance2 self#bounds p1 p2
+        
         method distance p1 p2 = distance self#bounds p1 p2
+        
         method distance_and_direction p1 p2 = 
             ((distance_and_direction self#bounds p1 p2): ((dir * dir) * float))
+        
         method update_vision = 
             update_vision (Hashtbl.fold ht_to_val_list state.my_ants []) state
+        
         method visible loc = visible state loc
+        
         method passable loc = passable state loc
+        
         method centre = centre state
+        
         method time_remaining = time_remaining state
+        
         method set_state s = state <- s
+        
         method get_state = state
+        
         method turn = state.turn
+        
         method get_map = state.tmap
+        
         method get_player_seed = state.setup.player_seed
+        
         method is_occupied loc = is_occupied_location state loc
+        
         method move_ant loc1 (d:dir) loc2 = move_ant state loc1 d loc2
+        
         method enemy_ants = state.enemy_ants
+        
         method new_goal_for ant = new_goal_for state ant
 
         method goal_maps = state.goal_maps
+        
         method add_goal gtype location value = add_goal state gtype location value
+        
         method diffuse = 
+            let finner acc x =
+                diffuse state acc [x] (Hashtbl.create 1000) in
             let diffuse_one k (ttype, loc_list, map) =
-                print_diffuse_map (
-                List.fold_left
-                (fun acc x -> diffuse state acc [x] (Hashtbl.create 20))
-                map
-                loc_list); 
+                ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state)); 
+                let _res = List.fold_left finner map loc_list in
+                ddebug (Printf.sprintf "end diffuse %f\n" (time_remaining
+                state));
                 () in
-            Hashtbl.iter diffuse_one state.goal_maps;
+            Hashtbl.iter diffuse_one state.goal_maps
 
         method my_ants = 
             match state.cache_my_ants with
@@ -709,6 +746,7 @@ let loop engine =
         cache_food = Invalid;
         cache_my_hills = Invalid;
         cache_enemy_hills = Invalid;
+        cells_from = Hashtbl.create 2000;
     } in
 
     for count_row = 0 to (Array.length proto_gstate.tmap - 1) do

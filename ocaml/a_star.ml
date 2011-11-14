@@ -6,7 +6,11 @@ let cols = 15;;
 
 let max_iters = rows * cols / 3;;
 
-(* Coordinate -> Coordinate -> Unit *)
+let eat_breadcrumbs breadcrumbs goal = 
+	match retrace_path breadcrumbs breadcrumbs.(goal.y).(goal.x) with
+	| h1::h2::tail -> (**FIX**)Path.find_direction(h1, h2)
+	| _ -> ();;
+
 let find_dir_with_a_star start goalie =
     let closed_set = Array.make_matrix cols rows false in
     let queue = Base.PriorityQueue.make (fun (_, _, p1) (_, _, p2) -> p1 < p2) in
@@ -31,12 +35,12 @@ let find_dir_with_a_star start goalie =
 
 (* StepData -> Int -> StepData *)
 let rec a_star_iterate stepdata iters =
-    if not(stepdata.queue.is_empty) && (iters < Max_Iters) then (
+    if not(stepdata.queue.is_empty) && iters < max_iters then (
         let loc = get_fresh_loc stepdata.queue stepdata.closed in
-        if (loc.y == stepdata.goal.y) && (loc.x == stepdata.goal.x) then
+        if loc.y == stepdata.goal.y && loc.x == stepdata.goal.x then
             generate_new_step_data stepData loc
         else (
-            let stepdata.closed.(loc.y).(loc.x) = true in
+            stepdata.closed.(loc.y).(loc.x) <- true;
             a_star_iterate (a_star_step (generate_new_step_data stepdata loc)) (iters + 1)
         )
 	
@@ -105,11 +109,6 @@ let manhattan_distance start_loc end_loc =
     abs (start_loc.x - end_loc.x) + abs (start_loc.y - end_loc.y);;
 
 	
-(* def eatBreadcrumbs(breadcrumbs: Array[Array[Coordinate]], goal: Coordinate, graph: Graph) *)
-let eat_breadcrumbs breadcrumbs goal = 
-	match retrace_path breadcrumbs breadcrumbs.(goal.y).(goal.x) with
-	| h1::h2::tail -> (**FIX**)Path.find_direction(h1, h2)
-	| _ -> ();;
 
 	
 (* def retracePath(breadcrumbs: Array[Array[Coordinate]], current: Coordinate) : List[Coordinate] *)
