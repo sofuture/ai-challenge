@@ -4,7 +4,7 @@ let rows = 15;;
 
 let cols = 15;;
 
-let max_iters = rows * cols / 3;;
+let max_iters = rows * cols / 1.5;;
 
 let eat_breadcrumbs breadcrumbs goal = 
 	match retrace_path breadcrumbs breadcrumbs.(goal.y).(goal.x) with
@@ -107,9 +107,7 @@ let a_star_step stepdata =
 (* def manhattanDistance(start: Coordinate,  end: Coordinate) : Int *)
 let manhattan_distance start_loc end_loc =
     abs (start_loc.x - end_loc.x) + abs (start_loc.y - end_loc.y);;
-
 	
-
 	
 (* def retracePath(breadcrumbs: Array[Array[Coordinate]], current: Coordinate) : List[Coordinate] *)
 let retrace_path breadcrumbs current_loc = 
