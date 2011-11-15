@@ -505,15 +505,6 @@ let rec update_vision my_ants gstate =
          paint_fov head gstate;
          update_vision tail gstate;;
 
-
-(* Is tile at loc passable (not blocked by water or food)? *)
-let passable gstate (row, col) =
-    let t = tile_of_int (gstate.tmap.(row).(col).content) in
-    not ((t = `Water) || (t = `Food));;
-
-let centre state = 
-    state.setup.rows / 2, state.setup.cols / 2;;
-
 (* How many milliseconds remain? *)
 let time_remaining state = 
     let turn_time = 
@@ -633,10 +624,6 @@ class swrap state =
         
         method visible loc = visible state loc
         
-        method passable loc = passable state loc
-        
-        method centre = centre state
-        
         method time_remaining = time_remaining state
         
         method set_state s = state <- s
@@ -662,7 +649,6 @@ class swrap state =
         method add_goal gtype location value = add_goal state gtype location value
         
         method diffuse = 
-            let (r,c) = state.setup.rows, state.setup.cols in
             let diffuse_one k (ttype, loc_list, map) =
                 ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state));
                 let locs = Hashtbl.fold ht_to_key_list loc_list [] in
