@@ -11,8 +11,8 @@ let peek queue =
     queue.heap_arr.(0);;
 
 let rec size_helper arr current_size =
-    if arr.length > current_size && arr.(current_size) <> None then size_helper
-    arr (current_size + 1)
+    if arr.length > current_size && arr.(current_size) <> None
+        then size_helper arr (current_size + 1)
     else current_size;;
 
 let size queue =
@@ -32,7 +32,7 @@ let swap queue start_index end_index =
 let better queue first second =
     let my_last = (size queue) - 1 in
     if first > my_last || second > my_last || queue.heap_arr.(first) == None
-    then false
+        then false
     else if queue.heap_arr.(second) == None then true
     else (queue.order_prop queue.heap_arr.(first) queue.heap_arr.(second));;
 
@@ -83,8 +83,8 @@ let mem queue elem =
     for i=0 to ((size queue) - 1) do
         match queue.heap_arr.(i) with
         | None -> false
-        | y, x, priority -> if (y == elem.y && x == elem.x && priority ==
-            elem.priority) then true
+        | y, x, priority ->
+                if (y == elem.y && x == elem.x && priority == elem.priority) then true
     done;
     false;;
 
