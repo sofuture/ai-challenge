@@ -117,8 +117,6 @@ val distance_and_direction :
 val mark_seen : int -> int * int -> mapb array array -> unit
 val paint_fov : ant -> tgame_state -> unit
 val update_vision : ant list -> tgame_state -> unit
-val passable : tgame_state -> int * int -> bool
-val centre : tgame_state -> int * int
 val time_remaining : tgame_state -> float
 val remove_dead_ants : tgame_state -> unit
 val add_goal : tgame_state -> goal_type -> location -> float -> unit
@@ -140,7 +138,6 @@ class swrap :
     val mutable state : tgame_state
     method add_goal : goal_type -> location -> float -> unit
     method bounds : int * int
-    method centre : int * int
     method diffuse : unit
     method direction : int * int -> int * int -> dir * dir
     method distance : int * int -> int * int -> float
@@ -163,7 +160,6 @@ class swrap :
     method my_ants : ant list
     method my_hills : loc_extra list
     method new_goal_for : ant -> int * int
-    method passable : int * int -> bool
     method set_state : tgame_state -> unit
     method step_dir : int * int -> dir -> int * int
     method time_remaining : float

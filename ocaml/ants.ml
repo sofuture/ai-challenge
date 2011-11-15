@@ -525,10 +525,8 @@ let remove_dead_ants gstate =
     List.iter rem dead_keys
 
 let rec add_goal gstate gtype location value =
+    let r,c = location in
     if Hashtbl.mem gstate.goal_maps gtype then (
-        let (tr,tc) = location in
-        let r = tr - 1 in
-        let c = tc - 1 in
         let map = Hashtbl.find gstate.goal_maps gtype in
         let (_, locs, mat) = map in
         mat.(r).(c) <- value;
@@ -650,11 +648,15 @@ class swrap state =
         
         method diffuse = 
             let diffuse_one k (ttype, loc_list, map) =
-                ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state));
-                let locs = Hashtbl.fold ht_to_key_list loc_list [] in
-                let _res = diffuse state map locs loc_list in
-                ddebug (Printf.sprintf "end diffuse %f\n" (time_remaining state));
-                () in
+                match ttype with 
+                | `Explore -> ddebug ("dont actually diffuse explore right this hot sec\n")
+                | _ -> (
+                    ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state));
+                    let locs = Hashtbl.fold ht_to_key_list loc_list [] in
+                    let _res = diffuse state map locs loc_list in
+                    ddebug (Printf.sprintf "end diffuse %f\n" (time_remaining state));
+                    () 
+                )in
             Hashtbl.iter diffuse_one state.goal_maps
 
         method my_ants = 
