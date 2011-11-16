@@ -1,3 +1,6 @@
+#use "pcoord.ml";;
+#use "step_data.ml";;
+
 (* Obviously, something has to invoke a_star *)
 
 let rows = 15;;
@@ -13,7 +16,7 @@ let eat_breadcrumbs breadcrumbs goal =
 
 let find_dir_with_a_star start goalie =
     let closed_set = Array.make_matrix cols rows false in
-    let queue = Base.PriorityQueue.make (fun (_, _, p1) (_, _, p2) -> p1 < p2) in
+    let queue = Base.PriorityQueue.make (fun Some (_, _, p1) Some (_, _, p2) -> p1 < p2) in
     let cost_vals = Array.make_matrix cols rows -1 in
     let heuristic_vals = Array.make_matrix cols rows -1 in
     let total_vals = Array.make_matrix cols rows -1 in
@@ -22,7 +25,7 @@ let find_dir_with_a_star start goalie =
     cost_vals.(start.y).(start.x) <- 0;
     heuristic_vals.(start.y).(start.x) <- manhattan_distance start goalie;
     total_vals.(start.y).(start.x) <- cost_vals.(start.y).(start.x) + heuristic_vals.(start.y).(start.x);
-    queue.add {y = start.y; x = start.x; priority = total_vals.(start.y).(start.x)};
+    queue.enqueue {y = start.y; x = start.x; priority = total_vals.(start.y).(start.x)};
     let stepdata = a_star_iterate {
             loc = start; goal = goalie; closed = closed_set; pqueue = queue;
             cost_arr = cost_vals; heuristic_arr = heuristic_vals;
@@ -57,7 +60,7 @@ let generate_new_step_data stepdata location =
 	  
 (* def getFreshLoc(queue: PriorityQueue[PriorityCoordinate], closedSet: Array[Array[Boolean]]): PriorityCoordinate *)
 let get_fresh_loc queue closed_set =	
-	let maybeLoc = queue.first in
+	let maybeLoc = get queue.dequeue in
     if (closed_set.(maybe_loc.y).(maybe_loc.x)) then (
         if (not(queue.is_empty)) then get_fresh_loc queue closedSet
 		else ()
@@ -95,7 +98,7 @@ let a_star_step stepdata =
                 breadcrumb_arr(x)(y) = {y = loc.y; x = loc.x; -1}
             );
 
-            if (not(contains_neighbor)) then queue.add {y = neighbor.y; x = neighbor.x; total_arr.(y).(x)}
+            if (not(contains_neighbor)) then queue.enqueue {y = neighbor.y; x = neighbor.x; total_arr.(y).(x)}
 
         )
 
