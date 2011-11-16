@@ -1,7 +1,7 @@
 #use "pcoord.ml";;
 
 (* A Priority Queue and its supporting functions *)
-type pqueue = {order_prop : (pcoord option -> pcoord option) -> bool; mutable heap_arr : pcoord option array};;
+type pqueue = {order_prop : pcoord option -> pcoord option -> bool; mutable heap_arr : pcoord option array};;
 
 let make ordering arr =
     {order_prop = ordering; heap_arr = arr};;
@@ -36,7 +36,7 @@ let better queue first second =
     if first > my_last || second > my_last || queue.heap_arr.(first) == None
         then false
     else if queue.heap_arr.(second) == None then true
-    (* FAILURE *) else queue.order_prop (queue.heap_arr.(first) queue.heap_arr.(second));;
+    else queue.order_prop queue.heap_arr.(first) queue.heap_arr.(second);;
 
 let find_best_child_index queue parent_index =
     let first = 2 * parent_index + 1 in
