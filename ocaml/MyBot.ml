@@ -279,24 +279,7 @@ let rec set_goals_for state types =
     | h::t ->
         let mint = Int32.to_int Int32.max_int in
         match h with
-        | `Explore ->
-            if false then 
-                let m = state#get_map in
-                for i = 1 to (Array.length m - 1) do
-                    for j = 1 to (Array.length m.(i) - 1) do
-                        let t = m.(i).(j) in
-                        let floc = (i, j) in
-                        if not_water state (i, j) then (
-                            let seen = t.seen in
-                            let v = float_of_int (mint - ((200 - seen) * 300)) in
-                            state#add_goal `Explore floc v
-                        ) else (
-                            let v = -1.0 in
-                            state#add_goal `Explore floc v
-                        )
-                    done;
-                done;
-            set_goals_for state t
+        | `Explore -> set_goals_for state t
         | _ ->
             let ts = goal_type_tiles state h in
             let add p = state#add_goal h p (float_of_int mint); () in
