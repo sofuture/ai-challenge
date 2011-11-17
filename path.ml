@@ -1,3 +1,5 @@
+#use "ocaml/pcoord.ml";;
+
 open Hashtbl;;
 
 open Printf;;
@@ -26,7 +28,7 @@ end;;
 
 
 type ctype = [`Goal | `Origin | `Empty | `Blocked | `Seen];;
-type direction = [`N | `S | `E | `W];;
+type direction = [`N | `S | `E | `W | `Invalid];;
 type cell = ctype * int;;
 
 let mwidth = 15;;
@@ -54,13 +56,12 @@ let navigate (orr, orc) dir =
     | `N -> (orr-1, orc)
     | `S -> (orr+1, orc)
     | `E -> (orr, orc+1)
-    | `W -> (orr, orc-1)
+    | `W -> (orr, orc-1);;
 	
 let rec nav_dirs origin dirs =
     match dirs with
     | [] -> origin
-    | h::t ->
-        nav_dirs (navigate origin h) t;;
+    | h::t -> nav_dirs (navigate origin h) t;;
 		
 let cell_of_int ival = 
     if ival = 1 then `Blocked
@@ -132,9 +133,9 @@ let is_solution point goal =
     0 = cost point goal;;
 	
 (* def findCoords(loc: Coordinate, dir: Direction) : Coordinate *)
-let find_coords pcoord dir =
-	let ret_coord = navigate (pcoord.y, pcoord.x) dir in
-	{y = ret_coord.y; x = ret_coord.x; priority = pcoord.priority};;
+let find_coords coord dir =
+	let (ret_y, ret_x) = navigate (coord.y, coord.x) dir in
+    {y = ret_y; x = ret_x; priority = coord.priority};;
 	
 (* def findDirection(start: Coordinate, end: Coordinate) : Direction *)
 let find_direction start_coord end_coord =
@@ -142,7 +143,7 @@ let find_direction start_coord end_coord =
     else if (end_coord.x == start_coord.x - 1) then `W
     else if (end_coord.y == start_coord.y + 1) then `S
     else if (end_coord.y == start_coord.y - 1) then `N
-    else ();;
+    else `Invalid;;
 		
 (* def isPassable(terrain: Terrain) : Boolean *)
 let is_passable terrain =
@@ -152,12 +153,16 @@ let is_passable terrain =
 let get_terrain coord =
 	let x = coord.x in
 	let y = coord.y in
-		if (((x >= 0) && (x < mwidth)) && ((y >= 0) && (y < mheight))) then cell_of_int (map.(y).(x))
-		else ();;
+		if (x >= 0 && x < mwidth) && (y >= 0 && y < mheight) then cell_of_int (List.nth (List.nth map y) x)
+		else `Blocked;;
 	
 (* def neighborsOf(loc: Coordinate) : List[Direction] *)
 let find_neighbors_of loc =
-    List.fold_left (fun acc x -> if (is_passable (get_terrain (find_coords loc x))) then x::acc else acc; ) () (`N::`E::`S::`W::());;
+    List.fold_left (
+    fun acc x ->
+        if is_passable (get_terrain (find_coords loc x)) then x::acc
+        else acc;
+    )  []  (`N::`E::`S::`W::[]);;
 
 (* def step(start: Coordinate, end: Coordinate) *)
 (* Do something with this if you want to draw the queries on the map and update the ant's location as it queries. *) 
