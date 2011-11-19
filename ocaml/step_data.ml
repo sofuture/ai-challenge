@@ -1,6 +1,3 @@
-#use "pcoord.ml";;
-#use "pqueue.ml";;
-
 (* The data that will be passed around from one A* step to another *)
 type step_data = { loc : pcoord;
                    goal : pcoord;

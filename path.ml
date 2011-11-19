@@ -1,5 +1,3 @@
-#use "ocaml/pcoord.ml";;
-
 open Hashtbl;;
 
 open Printf;;
@@ -26,6 +24,7 @@ module Queue = struct
             take queue;;
 end;;
 
+module Path = struct
 
 type ctype = [`Goal | `Origin | `Empty | `Blocked | `Seen];;
 type direction = [`N | `S | `E | `W | `Invalid];;
@@ -56,7 +55,8 @@ let navigate (orr, orc) dir =
     | `N -> (orr-1, orc)
     | `S -> (orr+1, orc)
     | `E -> (orr, orc+1)
-    | `W -> (orr, orc-1);;
+    | `W -> (orr, orc-1)
+    |  _ -> (orr, orc);;
 	
 let rec nav_dirs origin dirs =
     match dirs with
@@ -204,4 +204,6 @@ let _ =
         Printf.printf "WE CAN GET THERE!\n"
     else 
         Printf.printf "WE CANT GET THERE LOL!\n";;
+
+end;;
 
