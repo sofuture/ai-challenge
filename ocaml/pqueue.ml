@@ -1,6 +1,6 @@
-#use "pcoord.ml";;
-
 (* A Priority Queue and its supporting functions *)
+module PQ = struct
+
 type pqueue = {order_prop : pcoord option -> pcoord option -> bool; mutable heap_arr : pcoord option array};;
 
 let make ordering arr =
@@ -95,3 +95,5 @@ let rec mem_helper queue elem index end_index =
 
 let mem queue elem =
     mem_helper queue elem 0 (size queue);;
+
+end;;
