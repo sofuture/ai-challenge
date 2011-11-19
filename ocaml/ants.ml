@@ -584,6 +584,18 @@ let rec diffuse gstate mdat frontier explored =
             diffuse gstate mdat (t@next) explored
         );;
 
+let diffuse_explore gstate mdat =
+    let mint = Int32.to_int Int32.max_int in
+    for i = 0 to (Array.length mdat - 1) do
+        for j = 0 to (Array.length mdat.(i) - 1) do
+            let seen = gstate.tmap.(i).(j).seen in
+            let v = 
+                if tile_of_int gstate.tmap.(i).(j).content = `Water then -1.0
+                else float_of_int (mint - ((200 - seen) * 300)) in
+            mdat.(i).(j) <- v
+        done;
+    done;;
+
 let print_diffuse_map map =
     if true then ()
     else 
@@ -649,7 +661,10 @@ class swrap state =
         method diffuse = 
             let diffuse_one k (ttype, loc_list, map) =
                 match ttype with 
-                | `Explore -> ddebug ("dont actually diffuse explore right this hot sec\n")
+                | `Explore ->
+                    ddebug (Printf.sprintf "start diffuse explore %f\n" (time_remaining state));
+                    diffuse_explore state map;
+                    ddebug (Printf.sprintf "end diffuse explore %f\n" (time_remaining state))
                 | _ -> (
                     ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state));
                     let locs = Hashtbl.fold ht_to_key_list loc_list [] in

@@ -131,6 +131,7 @@ val diffuse :
   tgame_state ->
   float array array ->
   location list -> (location, bool) Hashtbl.t -> float array array
+val diffuse_explore : tgame_state -> float array array -> unit
 val print_diffuse_map : float array array -> unit
 class swrap :
   tgame_state ->

@@ -279,7 +279,9 @@ let rec set_goals_for state types =
     | h::t ->
         let mint = Int32.to_int Int32.max_int in
         match h with
-        | `Explore -> set_goals_for state t
+        | `Explore -> 
+            state#add_goal h (0,0) 1.;
+            set_goals_for state t
         | _ ->
             let ts = goal_type_tiles state h in
             let add p = state#add_goal h p (float_of_int mint); () in
