@@ -9,9 +9,6 @@ clean : clean-submission
 run :
 	sh run.sh
 
-poland:
-	sh run_in_poland.sh
-
 test :
 	sh test_bot.sh
 
