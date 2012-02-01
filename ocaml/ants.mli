@@ -127,12 +127,10 @@ val new_cells_from :
   tgame_state ->
   'a ->
   int * int -> 'b -> (location, 'c) Hashtbl.t -> int * int -> location list
-val diffuse :
-  tgame_state ->
-  float array array ->
-  location list -> (location, bool) Hashtbl.t -> float array array
-val diffuse_explore : tgame_state -> float array array -> unit
 val print_diffuse_map : float array array -> unit
+val loop_diffuse : tgame_state -> float array array -> int -> unit
+val diffuse : tgame_state -> float array array -> 'a -> 'b -> unit
+val diffuse_explore : tgame_state -> float array array -> unit
 class swrap :
   tgame_state ->
   object

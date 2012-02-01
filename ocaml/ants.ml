@@ -568,21 +568,45 @@ let new_cells_from gstate mdat loc frontier explored bounds =
         else true in
     List.filter valid (cells_from gstate loc bounds);;
 
+let print_diffuse_map map =
+    if true then ()
+    else 
+        for i = 0 to (Array.length map) - 1 do
+            for j = 0 to (Array.length map.(i)) - 1 do
+                ddebug (Printf.sprintf "%4f " map.(i).(j))
+            done;
+            ddebug "\n"
+        done;;
+
+let loop_diffuse gstate mdat n = 
+    let bounds = (gstate.setup.rows, gstate.setup.cols) in
+    for a = 0 to n do
+        for i = 0 to (Array.length mdat - 1) do
+            for j = 0 to (Array.length mdat.(i) - 1) do
+                mdat.(i).(j) <- diffusion_value gstate mdat (i,j) bounds
+            done;
+        done;
+    done;
+    ();;
+
 let rec diffuse gstate mdat frontier explored =
-    match frontier with
-    | [] -> mdat
-    | h :: t ->
-        if Hashtbl.mem explored h then
-            diffuse gstate mdat t explored
-        else (
-            ddebug (Printf.sprintf "explorin: %d %f\n" (List.length frontier) (time_remaining gstate));
-            let r, c = h in
-            let bounds = (gstate.setup.rows, gstate.setup.cols) in
-            Hashtbl.add explored h true;
-            let next = new_cells_from gstate mdat h frontier explored bounds in
-            mdat.(r).(c) <- diffusion_value gstate mdat (r,c) bounds;
-            diffuse gstate mdat (t@next) explored
-        );;
+    loop_diffuse gstate mdat 100;;
+(*
+    else 
+        match frontier with
+        | [] -> mdat
+        | h :: t ->
+            if Hashtbl.mem explored h then
+                diffuse gstate mdat t explored
+            else (
+                let r, c = h in
+                let bounds = (gstate.setup.rows, gstate.setup.cols) in
+                Hashtbl.add explored h true;
+                let next = new_cells_from gstate mdat h frontier explored bounds in
+                mdat.(r).(c) <- diffusion_value gstate mdat (r,c) bounds;
+                diffuse gstate mdat (t@next) explored
+            );;
+*)
 
 let diffuse_explore gstate mdat =
     let mint = Int32.to_int Int32.max_int in
@@ -594,17 +618,9 @@ let diffuse_explore gstate mdat =
                 else float_of_int (mint - ((200 - seen) * 300)) in
             mdat.(i).(j) <- v
         done;
-    done;;
-
-let print_diffuse_map map =
-    if true then ()
-    else 
-        for i = 0 to (Array.length map) - 1 do
-            for j = 0 to (Array.length map.(i)) - 1 do
-                ddebug (Printf.sprintf "%4f " map.(i).(j))
-            done;
-            ddebug "\n"
-        done;;
+    done;
+    loop_diffuse gstate mdat 10;
+    ();;
 
 class swrap state =
     object (self)
@@ -667,8 +683,9 @@ class swrap state =
                     ddebug (Printf.sprintf "end diffuse explore %f\n" (time_remaining state))
                 | _ -> (
                     ddebug (Printf.sprintf "start diffuse %f\n" (time_remaining state));
-                    let locs = Hashtbl.fold ht_to_key_list loc_list [] in
-                    let _res = diffuse state map locs loc_list in
+                    loop_diffuse state map 10;
+ (*                   let locs = Hashtbl.fold ht_to_key_list loc_list [] in
+                    let _res = diffuse state map locs loc_list in*)
                     ddebug (Printf.sprintf "end diffuse %f\n" (time_remaining state));
                     () 
                 )in
